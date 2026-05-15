@@ -5,7 +5,6 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import legacy from "@vitejs/plugin-legacy";
-import { viteSingleFile } from "vite-plugin-singlefile";
 
 // CAPACITOR_BUILD=1 → emit relative asset paths so Android WebView (file://) can resolve them,
 // and emit a client manifest so we can generate a static index.html for the APK.
@@ -20,12 +19,14 @@ export default defineConfig({
     plugins: isCapacitor
       ? [
           legacy({
-            targets: ["chrome 70", "defaults"],
-            polyfills: true,
+            // Указываем Chrome 70 для совместимости с WebView на Android
+            targets: ["chrome 70", "defaults", "not IE 11"],
+            // ВКЛЮЧАЕМ ПОЛНУЮ ПОДДЕРЖКУ ПОЛИФИЛЛОВ (решает System is not defined)
+            polyfills: true, 
             modernPolyfills: true,
             renderLegacyChunks: true,
+            additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
           }),
-          viteSingleFile({ removeViteModuleLoader: true }),
         ]
       : [],
     define: {
@@ -35,10 +36,17 @@ export default defineConfig({
     },
     ...(isCapacitor
       ? {
+          // КРИТИЧНО: относительные пути для Android
           base: "./",
           build: {
+            // ВОЗВРАЩАЕМ РАЗДЕЛЕНИЕ КОДА: чтобы TanStack Start нашел style.css
+            cssCodeSplit: true, 
             target: "es2018",
             cssTarget: "chrome70",
+            // Отключаем modulePreload, чтобы не путать старые WebView
+            modulePreload: false,
+            // Используем terser для корректной минификации legacy-кода
+            minify: 'terser',
           },
           environments: {
             client: {
