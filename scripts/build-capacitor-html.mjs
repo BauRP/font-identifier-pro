@@ -15,7 +15,7 @@
  *      sees index.html at the root.
  */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, rmSync, cpSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 
 const ROOT = process.cwd();
 const CLIENT_DIR = join(ROOT, "dist", "client");
