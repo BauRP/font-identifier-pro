@@ -1,15 +1,24 @@
-// FontScan Elite — app/build.gradle template
-// Copied into android/app/build.gradle by scripts/apply-android-patches.js
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.7.2'
+        classpath 'com.google.gms:google-services:4.4.2'
+    }
+}
+
 apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
 
 android {
     namespace "com.trivo.app"
-    compileSdk 35
+    compileSdk 36
+
     defaultConfig {
         applicationId "com.trivo.app"
-        minSdkVersion 23
-        targetSdkVersion 35
+        minSdkVersion 22
+        targetSdkVersion 36
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -17,12 +26,14 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
@@ -32,8 +43,6 @@ android {
 repositories {
     google()
     mavenCentral()
-    maven { url 'https://maven.google.com' }
-    maven { url 'https://artifactory-external.vkpartner.ru/artifactory/maven' }
 }
 
 dependencies {
@@ -42,15 +51,13 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 
-    // Yandex Mobile Ads SDK 7.2.0
-    implementation 'com.yandex.android:mobileads:7.2.0'
-
-    // Firebase Cloud Messaging (BOM aligned)
+    // Firebase (используется для облачного хранения шрифтов)
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-analytics'
@@ -58,11 +65,11 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+// Безопасное подключение Google Services
 try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
+    if (file('google-services.json').exists()) {
         apply plugin: 'com.google.gms.google-services'
     }
 } catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+    logger.info("google-services.json not found")
 }
