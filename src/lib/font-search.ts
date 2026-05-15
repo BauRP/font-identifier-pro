@@ -1,11 +1,15 @@
 import type { FontEntry, SearchResult } from './font-types';
 import { loadDriveMapping } from './font-types';
+// @ts-expect-error — flexsearch ships its own types, but the default Document export is loose
+import FlexSearch from 'flexsearch';
 
 const assetUrl = (path: string) => new URL(path, window.location.href).toString();
 
 let fontIndex: FontEntry[] = [];
 let isLoaded = false;
 let loadPromise: Promise<void> | null = null;
+// FlexSearch document index — optimized for the ~147k-entry catalog
+let flex: any = null;
 
 export async function loadFontIndex(): Promise<FontEntry[]> {
   if (isLoaded) return fontIndex;
@@ -19,6 +23,18 @@ export async function loadFontIndex(): Promise<FontEntry[]> {
     loadDriveMapping(),
   ]).then(([data]) => {
     fontIndex = data;
+    // Build FlexSearch document index (forward tokenizer = fastest for prefix lookups)
+    flex = new FlexSearch.Document({
+      tokenize: 'forward',
+      cache: 100,
+      document: {
+        id: 'file_name',
+        index: ['full_name', 'family_name'],
+      },
+    });
+    for (let i = 0; i < fontIndex.length; i++) {
+      flex.add(fontIndex[i]);
+    }
     isLoaded = true;
   });
 
@@ -32,20 +48,26 @@ export function searchFonts(query: string): SearchResult[] {
   const q = query.toLowerCase().trim();
   const exact: SearchResult[] = [];
   const close: SearchResult[] = [];
+  const seen = new Set<string>();
 
-  for (let i = 0; i < fontIndex.length; i++) {
-    const entry = fontIndex[i];
-    const fullLower = entry.full_name.toLowerCase();
-    const familyLower = entry.family_name.toLowerCase();
+  // FlexSearch result shape: [{ field, result: [id, ...] }]
+  const hits: Array<{ field: string; result: string[] }> = flex
+    ? (flex.search(q, { limit: 50, suggest: true }) ?? [])
+    : [];
 
-    if (fullLower === q || familyLower === q) {
-      exact.push({ entry, score: 'exact' });
-    } else if (fullLower.includes(q) || familyLower.includes(q)) {
-      close.push({ entry, score: 'close' });
+  const lookup = new Map<string, FontEntry>();
+  for (let i = 0; i < fontIndex.length; i++) lookup.set(fontIndex[i].file_name, fontIndex[i]);
+
+  for (const group of hits) {
+    for (const id of group.result) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const entry = lookup.get(id);
+      if (!entry) continue;
+      const isExact =
+        entry.full_name.toLowerCase() === q || entry.family_name.toLowerCase() === q;
+      (isExact ? exact : close).push({ entry, score: isExact ? 'exact' : 'close' });
     }
-
-    // Cap results for performance
-    if (exact.length + close.length >= 50) break;
   }
 
   return [...exact.slice(0, 10), ...close.slice(0, 20)];
