@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Устанавливаем стабильную версию плагина 8.9.1 для поддержки API 36
+        // Устанавливаем стабильную версию плагина 8.9.1
         classpath 'com.android.tools.build:gradle:8.9.1' 
         classpath 'com.google.gms:google-services:4.4.2'
     }
@@ -25,13 +25,13 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Настройки линтера, чтобы билд не падал на проверках
+    // Настройки линтера для пропуска проверок SDK
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
 
-    // Базовая настройка Java (заменяет всё, что связано с Kotlin)
+    // Единственно верная настройка Java 21 для Android-проекта
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
@@ -45,27 +45,22 @@ android {
     }
 }
 
-// Универсальная настройка для Java-компилятора
-tasks.withType(JavaCompile) {
-    options.release = 21
-}
-
 repositories {
     google()
     mavenCentral()
 }
 
-// Принудительно держим стабильные версии core-библиотек
+// Принудительная фиксация версий core-библиотек
 configurations.all {
     resolutionStrategy.force "androidx.core:core:1.15.0"
     resolutionStrategy.force "androidx.core:core-ktx:1.15.0"
 }
 
 dependencies {
-    // Поддержка локальных AAR/JAR файлов без flatDir
+    // Поддержка локальных файлов без предупреждений flatDir
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     
-    // Фиксируем core версии 1.15.0 (версия 1.17.0 требует другой настройки)
+    // Фиксируем core на 1.15.0 для стабильности сборки
     implementation "androidx.core:core:1.15.0"
     implementation "androidx.core:core-ktx:1.15.0"
     
@@ -79,7 +74,7 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 
-    // Firebase для сканера
+    // Firebase (конфигурация сканера)
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-analytics'
