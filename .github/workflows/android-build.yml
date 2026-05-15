@@ -1,0 +1,70 @@
+name: FontScan Elite — Android Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build web assets for Capacitor
+        env:
+          CAPACITOR_BUILD: '1'
+        run: |
+          npm run build:capacitor
+          test -f dist/index.html || (echo "FATAL: dist/index.html missing" && exit 1)
+
+      - name: Add Android platform (conditional)
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            echo "Android platform already present — skipping cap add"
+          fi
+
+      - name: Apply native Android patches
+        run: node scripts/apply-android-patches.js
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Re-apply native patches after sync
+        run: node scripts/apply-android-patches.js
+
+      - name: Gradle assembleDebug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew clean
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FontScan-Elite-Official-Build
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
