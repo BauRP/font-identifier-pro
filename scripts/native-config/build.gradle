@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Версия 8.9.1 необходима для корректной поддержки compileSdk 36
+        // Использование версии 8.9.1 критично для поддержки API 36 в окружении без wrapper
         classpath 'com.android.tools.build:gradle:8.9.1' 
         classpath 'com.google.gms:google-services:4.4.2'
     }
@@ -19,7 +19,7 @@ android {
     defaultConfig {
         applicationId "com.trivo.app"
         
-        // Установлено 24, чтобы удовлетворить требования библиотеки ioncamera
+        // Порог поднят до 24, так как библиотека ioncamera не поддерживает версии ниже
         minSdkVersion 24 
         
         targetSdkVersion 36
@@ -51,14 +51,14 @@ repositories {
     mavenCentral()
 }
 
-// Принудительная фиксация версий для предотвращения конфликтов с API 36
+// Принудительная фиксация версий core-библиотек для стабильности на API 36
 configurations.all {
     resolutionStrategy.force "androidx.core:core:1.15.0"
     resolutionStrategy.force "androidx.core:core-ktx:1.15.0"
 }
 
 dependencies {
-    // Безопасный поиск локальных библиотек без использования flatDir
+    // Решение проблемы flatDir: импорт через дерево файлов
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     
     implementation "androidx.core:core:1.15.0"
@@ -81,6 +81,7 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+// Безопасное подключение плагина Google Services
 try {
     if (file('google-services.json').exists()) {
         apply plugin: 'com.google.gms.google-services'
