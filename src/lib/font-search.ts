@@ -1,6 +1,5 @@
 import type { FontEntry, SearchResult } from './font-types';
 import { loadDriveMapping } from './font-types';
-// @ts-expect-error — flexsearch ships its own types, but the default Document export is loose
 import FlexSearch from 'flexsearch';
 
 const assetUrl = (path: string) => new URL(path, window.location.href).toString();
