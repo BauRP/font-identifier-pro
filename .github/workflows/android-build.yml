@@ -47,13 +47,13 @@ jobs:
             echo "Android platform already present — skipping cap add"
           fi
 
-      - name: Apply native Android patches
-        run: node scripts/apply-android-patches.cjs
+      - name: Clean stale Capacitor web assets
+        run: rm -rf android/app/src/main/assets/public/*
 
       - name: Capacitor sync
         run: npx cap sync android
 
-      - name: Re-apply native patches after sync
+      - name: Apply native Android patches after sync
         run: node scripts/apply-android-patches.cjs
 
       - name: Gradle assembleDebug
