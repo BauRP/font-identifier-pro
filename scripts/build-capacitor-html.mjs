@@ -14,7 +14,7 @@
  *   4. Flattens dist/client/* up to dist/ so capacitor.config.ts (webDir: "dist")
  *      sees index.html at the root.
  */
-import { mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, renameSync, existsSync, rmSync, cpSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, rmSync, cpSync } from "node:fs";
 import { join, dirname } from "node:path";
 
 const ROOT = process.cwd();
@@ -84,6 +84,41 @@ const cssTags = [...cssSet]
   .map((href) => `    <link rel="stylesheet" href="./${href}" />`)
   .join("\n");
 
+function walkFiles(dir, prefix = "") {
+  if (!existsSync(dir)) return [];
+  const files = [];
+  for (const name of readdirSync(dir)) {
+    if (name === ".vite") continue;
+    const absolute = join(dir, name);
+    const relative = prefix ? `${prefix}/${name}` : name;
+    if (statSync(absolute).isDirectory()) {
+      files.push(...walkFiles(absolute, relative));
+    } else {
+      files.push(relative);
+    }
+  }
+  return files;
+}
+
+const emittedClientFiles = walkFiles(CLIENT_DIR);
+const legacyPolyfillFile = emittedClientFiles
+  .filter((file) => /(^|\/)polyfills-legacy-[\w.-]+\.js$/.test(file))
+  .sort()[0];
+const legacyEntryFile = emittedClientFiles
+  .filter((file) => /-legacy-[\w.-]+\.js$/.test(file) && !/(^|\/)polyfills-legacy-[\w.-]+\.js$/.test(file))
+  .sort((a, b) => statSync(join(CLIENT_DIR, b)).size - statSync(join(CLIENT_DIR, a)).size)[0];
+
+const legacyTags = [
+  legacyPolyfillFile
+    ? `    <script nomodule crossorigin id="vite-legacy-polyfill" src="./${legacyPolyfillFile}"></script>`
+    : "",
+  legacyEntryFile
+    ? `    <script nomodule crossorigin id="vite-legacy-entry" data-src="./${legacyEntryFile}">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>`
+    : "",
+]
+  .filter(Boolean)
+  .join("\n");
+
 const csp = [
   "default-src 'self' capacitor: https:",
   "script-src 'self' 'unsafe-inline' blob: capacitor:",
@@ -128,6 +163,7 @@ ${cssTags}
   <body>
     <div id="root"></div>
     <script>${safetyNetScript}</script>
+${legacyTags ? `${legacyTags}\n` : ""}
     <script type="module" src="./${entry.file}"></script>
   </body>
 </html>
