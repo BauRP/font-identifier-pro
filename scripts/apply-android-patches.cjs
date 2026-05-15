@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /**
  * FontScan Elite — Android patcher.
- * Copies pre-built native config (build.gradle, AndroidManifest.xml, etc.)
- * into android/ after `npx cap add android` has scaffolded the project.
- * Idempotent — safe to run multiple times in CI.
+ * Принудительно очищает проект от остатков Яндекса и накладывает чистый конфиг.
  */
 const fs = require('fs');
 const path = require('path');
@@ -13,7 +11,7 @@ const SRC = path.join(ROOT, 'scripts', 'native-config');
 const ANDROID = path.join(ROOT, 'android');
 
 if (!fs.existsSync(ANDROID)) {
-  console.warn('[patch] android/ not present yet — skipping (run after `cap add android`).');
+  console.warn('[patch] android/ not present yet — skipping.');
   process.exit(0);
 }
 
@@ -27,16 +25,30 @@ function copy(src, dest) {
   console.log(`[patch] wrote ${path.relative(ROOT, dest)}`);
 }
 
+// 1. Копируем основные файлы конфигурации (уже без Яндекса)
 copy(path.join(SRC, 'build.gradle'),         path.join(ANDROID, 'app', 'build.gradle'));
 copy(path.join(SRC, 'AndroidManifest.xml'),  path.join(ANDROID, 'app', 'src', 'main', 'AndroidManifest.xml'));
 copy(path.join(SRC, 'strings.xml'),          path.join(ANDROID, 'app', 'src', 'main', 'res', 'values', 'strings.xml'));
 copy(path.join(SRC, 'variables.gradle'),     path.join(ANDROID, 'variables.gradle'));
 copy(path.join(SRC, 'project-build.gradle'), path.join(ANDROID, 'build.gradle'));
 
-// Optional: drop google-services.json if provided as a CI secret file
+// 2. КРИТИЧЕСКИЙ ШАГ: Очистка MainActivity.java
+// Путь куда Capacitor создает файл при генерации
+const targetMainActivity = path.join(ANDROID, 'app', 'src', 'main', 'java', 'com', 'trivo', 'app', 'MainActivity.java');
+const sourceMainActivity = path.join(SRC, 'MainActivity.java');
+
+if (fs.existsSync(sourceMainActivity)) {
+    fs.mkdirSync(path.dirname(targetMainActivity), { recursive: true });
+    fs.copyFileSync(sourceMainActivity, targetMainActivity);
+    console.log('✅ [patch] MainActivity.java принудительно очищен от Яндекса');
+} else {
+    console.error('❌ [patch] Ошибка: Не найден исходный файл MainActivity.java в scripts/native-config/');
+}
+
+// 3. Работа с Google Services (если есть)
 const gs = path.join(ROOT, 'google-services.json');
 if (fs.existsSync(gs)) {
   copy(gs, path.join(ANDROID, 'app', 'google-services.json'));
 }
 
-console.log('[patch] Android native config applied.');
+console.log('[patch] Android native config applied. SYSTEM CLEAN.');
