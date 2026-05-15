@@ -34,30 +34,11 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Firebase Cloud Messaging -->
-        <service
-            android:name=".fcm.FontScanFirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="fontscan_default" />
-
-        <!-- Yandex Mobile Ads SDK 7.2.0 -->
-        <meta-data
-            android:name="com.yandex.mobile.ads.APPLICATION_ID"
-            android:value="@string/yandex_ads_app_id" />
-
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.AD_ID" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
