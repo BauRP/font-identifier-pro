@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Устанавливаем требуемую версию плагина 8.9.1
+        // Устанавливаем стабильную версию плагина 8.9.1 для поддержки API 36
         classpath 'com.android.tools.build:gradle:8.9.1' 
         classpath 'com.google.gms:google-services:4.4.2'
     }
@@ -25,22 +25,16 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Устраняем конфликт с flatDir и настраиваем линтер
+    // Настройки линтера, чтобы билд не падал на проверках
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
 
+    // Базовая настройка Java (заменяет всё, что связано с Kotlin)
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
-    }
-
-    // Если в проекте всё же есть Kotlin, настраиваем его через общие параметры
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            jvmTarget = "21"
-        }
     }
 
     buildTypes {
@@ -51,21 +45,27 @@ android {
     }
 }
 
+// Универсальная настройка для Java-компилятора
+tasks.withType(JavaCompile) {
+    options.release = 21
+}
+
 repositories {
     google()
     mavenCentral()
-    // Заменяем устаревший flatDir на правильное дерево файлов для плагинов
 }
 
+// Принудительно держим стабильные версии core-библиотек
 configurations.all {
     resolutionStrategy.force "androidx.core:core:1.15.0"
     resolutionStrategy.force "androidx.core:core-ktx:1.15.0"
 }
 
 dependencies {
+    // Поддержка локальных AAR/JAR файлов без flatDir
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     
-    // Фиксируем версии для стабильности API 36
+    // Фиксируем core версии 1.15.0 (версия 1.17.0 требует другой настройки)
     implementation "androidx.core:core:1.15.0"
     implementation "androidx.core:core-ktx:1.15.0"
     
@@ -79,6 +79,7 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 
+    // Firebase для сканера
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-analytics'
@@ -86,7 +87,7 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-// Безопасное подключение Firebase
+// Безопасное подключение Google Services
 try {
     if (file('google-services.json').exists()) {
         apply plugin: 'com.google.gms.google-services'
