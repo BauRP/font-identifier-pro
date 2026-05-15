@@ -47,13 +47,13 @@ jobs:
           fi
 
       - name: Apply native Android patches
-        run: node scripts/apply-android-patches.js
+        run: node scripts/apply-android-patches.cjs
 
       - name: Capacitor sync
         run: npx cap sync android
 
       - name: Re-apply native patches after sync
-        run: node scripts/apply-android-patches.js
+        run: node scripts/apply-android-patches.cjs
 
       - name: Gradle assembleDebug
         run: |
