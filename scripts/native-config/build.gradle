@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Устанавливаем стабильную версию плагина 8.9.1
+        // Версия 8.9.1 необходима для корректной поддержки compileSdk 36
         classpath 'com.android.tools.build:gradle:8.9.1' 
         classpath 'com.google.gms:google-services:4.4.2'
     }
@@ -18,20 +18,21 @@ android {
 
     defaultConfig {
         applicationId "com.trivo.app"
-        minSdkVersion 22
+        
+        // Установлено 24, чтобы удовлетворить требования библиотеки ioncamera
+        minSdkVersion 24 
+        
         targetSdkVersion 36
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Настройки линтера для пропуска проверок SDK
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
 
-    // Единственно верная настройка Java 21 для Android-проекта
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
@@ -50,17 +51,16 @@ repositories {
     mavenCentral()
 }
 
-// Принудительная фиксация версий core-библиотек
+// Принудительная фиксация версий для предотвращения конфликтов с API 36
 configurations.all {
     resolutionStrategy.force "androidx.core:core:1.15.0"
     resolutionStrategy.force "androidx.core:core-ktx:1.15.0"
 }
 
 dependencies {
-    // Поддержка локальных файлов без предупреждений flatDir
+    // Безопасный поиск локальных библиотек без использования flatDir
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     
-    // Фиксируем core на 1.15.0 для стабильности сборки
     implementation "androidx.core:core:1.15.0"
     implementation "androidx.core:core-ktx:1.15.0"
     
@@ -74,7 +74,6 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 
-    // Firebase (конфигурация сканера)
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-analytics'
@@ -82,7 +81,6 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-// Безопасное подключение Google Services
 try {
     if (file('google-services.json').exists()) {
         apply plugin: 'com.google.gms.google-services'
