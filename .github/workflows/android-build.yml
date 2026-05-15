@@ -36,7 +36,7 @@ jobs:
         env:
           CAPACITOR_BUILD: '1'
         run: |
-          npm run build:capacitor
+          npm run build
           test -f dist/index.html || (echo "FATAL: dist/index.html missing" && exit 1)
 
       - name: Add Android platform (conditional)
