@@ -101,23 +101,53 @@ function walkFiles(dir, prefix = "") {
 }
 
 const emittedClientFiles = walkFiles(CLIENT_DIR);
-const legacyPolyfillFile = emittedClientFiles
+
+function scriptTagPath(file) {
+  return file.startsWith("./") ? file : `./${file}`;
+}
+
+const emittedSystemLoaderFile = emittedClientFiles
+  .filter((file) => /(^|\/)(system|systemjs|s)[\w.-]*\.js$/i.test(file))
+  .sort((a, b) => statSync(join(CLIENT_DIR, a)).size - statSync(join(CLIENT_DIR, b)).size)[0];
+
+const emittedLegacyPolyfillFile = emittedClientFiles
   .filter((file) => /(^|\/)polyfills-legacy-[\w.-]+\.js$/.test(file))
   .sort()[0];
+
+const fallbackLegacyPolyfillFile = emittedClientFiles.includes("assets/polyfills-legacy.js")
+  ? "assets/polyfills-legacy.js"
+  : null;
+
+const systemLoaderFile = emittedSystemLoaderFile ?? emittedLegacyPolyfillFile ?? fallbackLegacyPolyfillFile;
+
+if (!systemLoaderFile) {
+  console.warn(
+    "[capacitor-html] Could not find an emitted SystemJS/polyfills legacy loader. " +
+      "The generated HTML will reference ./assets/polyfills-legacy.js as a fallback.",
+  );
+}
+
+const systemLoaderPath = scriptTagPath(systemLoaderFile ?? "assets/polyfills-legacy.js");
+
 const legacyEntryFile = emittedClientFiles
-  .filter((file) => /-legacy-[\w.-]+\.js$/.test(file) && !/(^|\/)polyfills-legacy-[\w.-]+\.js$/.test(file))
+  .filter(
+    (file) =>
+      /-legacy-[\w.-]+\.js$/.test(file) &&
+      file !== systemLoaderFile &&
+      !/(^|\/)polyfills-legacy-[\w.-]+\.js$/.test(file) &&
+      !/(^|\/)(system|systemjs|s)[\w.-]*\.js$/i.test(file),
+  )
   .sort((a, b) => statSync(join(CLIENT_DIR, b)).size - statSync(join(CLIENT_DIR, a)).size)[0];
 
-const legacyTags = [
-  legacyPolyfillFile
-    ? `    <script nomodule crossorigin id="vite-legacy-polyfill" src="./${legacyPolyfillFile}"></script>`
-    : "",
-  legacyEntryFile
-    ? `    <script nomodule crossorigin id="vite-legacy-entry" data-src="./${legacyEntryFile}">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>`
-    : "",
-]
-  .filter(Boolean)
-  .join("\n");
+const legacyLoaderTag = `    <script nomodule crossorigin id="vite-systemjs-loader" src="${systemLoaderPath}"></script>`;
+
+const legacyEntryTag = legacyEntryFile
+  ? `    <script nomodule crossorigin id="vite-legacy-entry" data-src="${scriptTagPath(
+      legacyEntryFile,
+    )}">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>`
+  : "";
+
+const legacyTags = [legacyLoaderTag, legacyEntryTag].filter(Boolean).join("\n");
 
 const csp = [
   "default-src 'self' capacitor: https:",
