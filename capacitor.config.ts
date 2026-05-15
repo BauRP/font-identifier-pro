@@ -10,7 +10,8 @@ const config: CapacitorConfigWithLegacyRuntimeFlag = {
   webDir: 'dist',
   bundledWebRuntime: false,
   android: {
-    allowMixedContent: false,
+    allowMixedContent: true,
+    webContentsDebuggingEnabled: true,
   },
   server: {
     androidScheme: 'https',

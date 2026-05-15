@@ -33,6 +33,7 @@ function copy(src, dest) {
 copy(path.join(SRC, 'build.gradle'),         path.join(ANDROID, 'app', 'build.gradle'));
 copy(path.join(SRC, 'AndroidManifest.xml'),  path.join(ANDROID, 'app', 'src', 'main', 'AndroidManifest.xml'));
 copy(path.join(SRC, 'strings.xml'),          path.join(ANDROID, 'app', 'src', 'main', 'res', 'values', 'strings.xml'));
+copy(path.join(SRC, 'network_security_config.xml'), path.join(ANDROID, 'app', 'src', 'main', 'res', 'xml', 'network_security_config.xml'));
 copy(path.join(SRC, 'variables.gradle'),     path.join(ANDROID, 'variables.gradle'));
 copy(path.join(SRC, 'project-build.gradle'), path.join(ANDROID, 'build.gradle'));
 

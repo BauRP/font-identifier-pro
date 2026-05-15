@@ -23,9 +23,13 @@ export default defineConfig({
     ...(isCapacitor
       ? {
           base: "./",
+        build: {
+          target: "es2018",
+          cssTarget: "chrome70",
+        },
         environments: {
           client: {
-            build: { manifest: true },
+            build: { manifest: true, target: "es2018", cssTarget: "chrome70" },
           },
         },
       }
