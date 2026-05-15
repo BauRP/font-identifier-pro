@@ -1,11 +1,8 @@
 package com.trivo.app;
 
-import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
+    // Весь лишний код с Яндексом удален.
+    // Приложение теперь чистое и готово к работе.
 }
