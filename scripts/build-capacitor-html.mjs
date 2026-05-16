@@ -182,5 +182,5 @@ function getLegacyRuntimeScore(file) {
 
 function escapeInlineScript(source) {
   return source
-    .replace(/<\/script/gi, "<\\/script")
-    .replace(/
+    .split("</script").join("<\\/script")
+    .split("
