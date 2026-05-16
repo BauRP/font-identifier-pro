@@ -6,23 +6,38 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import legacy from "@vitejs/plugin-legacy";
 
-// CAPACITOR_BUILD=1 → emit relative asset paths so Android WebView (file://) can resolve them,
-// and emit a client manifest so we can generate a static index.html for the APK.
 const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 
 export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
+    prerender: {
+      enabled: false,
+      autoStaticPathsDiscovery: false,
+      failOnError: false,
+    },
+    ...(isCapacitor
+      ? {
+          spa: {
+            enabled: false,
+            maskPath: "/",
+            prerender: {
+              enabled: false,
+              outputPath: "/",
+              crawlLinks: false,
+              retryCount: 0,
+            },
+          },
+        }
+      : {}),
   },
   vite: {
     plugins: isCapacitor
       ? [
           legacy({
-            // Указываем Chrome 70 для совместимости с WebView на Android
             targets: ["chrome 70", "defaults", "not IE 11"],
-            // ВКЛЮЧАЕМ ПОЛНУЮ ПОДДЕРЖКУ ПОЛИФИЛЛОВ (решает System is not defined)
-            polyfills: true, 
+            polyfills: true,
             modernPolyfills: true,
             renderLegacyChunks: true,
             additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
@@ -36,17 +51,37 @@ export default defineConfig({
     },
     ...(isCapacitor
       ? {
-          // КРИТИЧНО: относительные пути для Android
           base: "./",
           build: {
-            // ВОЗВРАЩАЕМ РАЗДЕЛЕНИЕ КОДА: чтобы TanStack Start нашел style.css
-            cssCodeSplit: true, 
+            cssCodeSplit: true,
             target: "es2018",
             cssTarget: "chrome70",
-            // Отключаем modulePreload, чтобы не путать старые WebView
             modulePreload: false,
-            // Используем terser для корректной минификации legacy-кода
-            minify: 'terser',
+            minify: "terser",
+            terserOptions: {
+              ecma: 2018,
+              module: false,
+              toplevel: false,
+              keep_classnames: true,
+              keep_fnames: true,
+              compress: {
+                defaults: true,
+                module: false,
+                toplevel: false,
+                side_effects: false,
+                unused: false,
+                pure_getters: false,
+                reduce_funcs: false,
+                reduce_vars: false,
+                passes: 1,
+              },
+              mangle: {
+                safari10: true,
+              },
+              format: {
+                comments: false,
+              },
+            },
           },
           environments: {
             client: {
@@ -54,6 +89,32 @@ export default defineConfig({
                 manifest: true,
                 target: "es2018",
                 cssTarget: "chrome70",
+                modulePreload: false,
+                minify: "terser",
+                terserOptions: {
+                  ecma: 2018,
+                  module: false,
+                  toplevel: false,
+                  keep_classnames: true,
+                  keep_fnames: true,
+                  compress: {
+                    defaults: true,
+                    module: false,
+                    toplevel: false,
+                    side_effects: false,
+                    unused: false,
+                    pure_getters: false,
+                    reduce_funcs: false,
+                    reduce_vars: false,
+                    passes: 1,
+                  },
+                  mangle: {
+                    safari10: true,
+                  },
+                  format: {
+                    comments: false,
+                  },
+                },
               },
             },
           },
