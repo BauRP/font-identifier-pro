@@ -5,8 +5,25 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import legacy from "@vitejs/plugin-legacy";
+import { join } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 const isCapacitor = process.env.CAPACITOR_BUILD === "1";
+
+// Наш микро-плагин для обмана краулера Lovable
+function fixLovablePrerenderPlugin() {
+  return {
+    name: "fix-lovable-prerender",
+    buildStart() {
+      const serverDir = join(process.cwd(), "dist", "server");
+      if (!existsSync(serverDir)) {
+        mkdirSync(serverDir, { recursive: true });
+      }
+      writeFileSync(join(serverDir, "server.js"), "export const app = {};", "utf8");
+      console.log("[fix-plugin] Заглушка server.js успешно создана для обмана краулера!");
+    }
+  };
+}
 
 export default defineConfig({
   tanstackStart: {
@@ -22,17 +39,20 @@ export default defineConfig({
       : {}),
   },
   vite: {
-    plugins: isCapacitor
-      ? [
-          legacy({
-            targets: ["chrome 70", "defaults", "not IE 11"],
-            polyfills: true,
-            modernPolyfills: true,
-            renderLegacyChunks: true,
-            additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
-          }),
-        ]
-      : [],
+    plugins: [
+      fixLovablePrerenderPlugin(), // Наш фикс будет работать ВСЕГДА (и в веб, и в мобилке)
+      ...(isCapacitor
+        ? [
+            legacy({
+              targets: ["chrome 70", "defaults", "not IE 11"],
+              polyfills: true,
+              modernPolyfills: true,
+              renderLegacyChunks: true,
+              additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+            }),
+          ]
+        : [])
+    ],
     define: {
       __CAPACITOR_BUILD__: JSON.stringify(isCapacitor),
       "process.env.CAPACITOR_BUILD": JSON.stringify(isCapacitor ? "1" : "0"),
