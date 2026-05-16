@@ -8,7 +8,8 @@ import legacy from "@vitejs/plugin-legacy";
 import { join } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
-const isCapacitor = process.env.CAPACITOR_BUILD === "1";
+// ЖЕСТКО ВКЛЮЧАЕМ РЕЖИМ ПРИЛОЖЕНИЯ ДЛЯ УБИЙСТВА ПРЕРЕНДЕРА И ОШИБКИ 500
+const isCapacitor = true;
 
 // Наш микро-плагин для обмана краулера Lovable
 function fixLovablePrerenderPlugin() {
