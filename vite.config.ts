@@ -29,9 +29,11 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
-    // ЖЕСТКО ВЫРУБАЕМ СЛОМАННЫЙ ПРЕРЕНДЕР
+    // ЖЕСТКО ВЫРУБАЕМ СЛОМАННЫЙ ПРЕРЕНДЕР С ГАРАНТИЕЙ
     prerender: {
       enabled: false, 
+      crawl: false,
+      routes: []
     },
     ...(isCapacitor
       ? {
