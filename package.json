@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "DATA_PRERENDER=false PRERENDER=false vite build && node scripts/post-build.mjs",
+    "build": "vite build && mkdir -p dist/server && echo 'export const app = {}' > dist/server/server.js && node scripts/post-build.mjs",
     "build:capacitor": "CAPACITOR_BUILD=1 npm run build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
