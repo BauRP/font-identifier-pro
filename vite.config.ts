@@ -12,16 +12,23 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
-    // Отключаем пререндеринг намертво на верхнем уровне, чтобы избежать ошибок с поиском сервера
-    prerender: false,
     ...(isCapacitor
       ? {
-          // Передаем как объект, чтобы Zod успешно прошел валидацию схемы
+          // Zod требует объект. Передаем пустой объект для SPA режима
           spa: {},
-          // Отключаем SSR для локального WebView в Android
+          // Отключаем SSR для локального WebView пакета
           ssr: false,
+          // Исправлено: Zod требует объект. Передаем настройки отключения внутри объекта
+          prerender: {
+            enabled: false,
+            autoStaticPathsDiscovery: false,
+            failOnError: false,
+          },
         }
-      : {}),
+      : {
+          // Дефолтный пустой пререндеринг-объект для стандартной сборки, чтобы Zod не ругался
+          prerender: {},
+        }),
   },
   vite: {
     plugins: isCapacitor
