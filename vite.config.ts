@@ -19,16 +19,6 @@ export default defineConfig({
             autoStaticPathsDiscovery: false,
             failOnError: false,
           },
-          spa: {
-            enabled: false,
-            maskPath: "/",
-            prerender: {
-              enabled: false,
-              outputPath: "/",
-              crawlLinks: false,
-              retryCount: 0,
-            },
-          },
         }
       : {}),
   },
@@ -53,6 +43,7 @@ export default defineConfig({
       ? {
           base: "./",
           build: {
+            manifest: true,
             cssCodeSplit: true,
             target: "es2018",
             cssTarget: "chrome70",
@@ -70,51 +61,6 @@ export default defineConfig({
                 toplevel: false,
                 side_effects: false,
                 unused: false,
-                pure_getters: false,
-                reduce_funcs: false,
-                reduce_vars: false,
-                passes: 1,
-              },
-              mangle: {
-                safari10: true,
-              },
-              format: {
-                comments: false,
-              },
-            },
-          },
-          environments: {
-            client: {
-              build: {
-                manifest: true,
-                target: "es2018",
-                cssTarget: "chrome70",
-                modulePreload: false,
-                minify: "terser",
-                terserOptions: {
-                  ecma: 2018,
-                  module: false,
-                  toplevel: false,
-                  keep_classnames: true,
-                  keep_fnames: true,
-                  compress: {
-                    defaults: true,
-                    module: false,
-                    toplevel: false,
-                    side_effects: false,
-                    unused: false,
-                    pure_getters: false,
-                    reduce_funcs: false,
-                    reduce_vars: false,
-                    passes: 1,
-                  },
-                  mangle: {
-                    safari10: true,
-                  },
-                  format: {
-                    comments: false,
-                  },
-                },
               },
             },
           },
