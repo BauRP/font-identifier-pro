@@ -30,8 +30,10 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
-    // ЖЕСТКО ВЫКЛЮЧАЕМ ПРЕРЕНДЕР, чтобы сборщик вообще не пытался сканировать страницы
-    prerender: false,
+    // Передали объект, чтобы Zod не ругался, и полностью отключили сканирование страниц
+    prerender: {
+      crawl: false,
+    },
     ...(isCapacitor
       ? {
           // Zod требует объект. Передаем пустой объект для SPA режима
