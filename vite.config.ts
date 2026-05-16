@@ -12,13 +12,13 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
-    prerender: {
-      enabled: false,
-      autoStaticPathsDiscovery: false,
-      failOnError: false,
-    },
     ...(isCapacitor
       ? {
+          prerender: {
+            enabled: false,
+            autoStaticPathsDiscovery: false,
+            failOnError: false,
+          },
           spa: {
             enabled: false,
             maskPath: "/",
