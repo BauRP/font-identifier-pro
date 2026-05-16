@@ -14,9 +14,9 @@ export default defineConfig({
     server: { entry: "server" },
     ...(isCapacitor
       ? {
-          // Насильно переводим TanStack Start в режим Single Page Application
-          spa: true,
-          // Полностью отключаем серверный рендеринг, чтобы весь код ушел в клиент
+          // Исправлено: передаем spa как пустой объект {}, чтобы Zod успешно прошёл валидацию
+          spa: {},
+          // Полностью отключаем серверный рендеринг, перенаправляя весь код в клиент
           ssr: false,
           prerender: {
             enabled: false,
