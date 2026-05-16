@@ -4,11 +4,10 @@
 //     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import legacy from "@vitejs/plugin-legacy";
 import { join } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
-// ВОЗВРАЩАЕМ ДИНАМИЧЕСКИЙ ФЛАГ, чтобы не ломать базовый путь веб-версии
+// ВОЗВРАЩАЕМ ДИНАМИЧЕСКИЙ ФЛАГ
 const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 
 // Наш микро-плагин для обмана краулера Lovable
@@ -30,11 +29,6 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
-    // Изменено только здесь: передаем пустой массив роутов, чтобы полностью заблокировать пререндер страниц
-    prerender: {
-      crawl: false,
-      routes: [],
-    },
     ...(isCapacitor
       ? {
           // Zod требует объект. Передаем пустой объект для SPA режима
@@ -47,17 +41,6 @@ export default defineConfig({
   vite: {
     plugins: [
       fixLovablePrerenderPlugin(), // Наш фикс будет работать ВСЕГДА
-      ...(isCapacitor
-        ? [
-            legacy({
-              targets: ["chrome 70", "defaults", "not IE 11"],
-              polyfills: true,
-              modernPolyfills: true,
-              renderLegacyChunks: true,
-              additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
-            }),
-          ]
-        : [])
     ],
     define: {
       __CAPACITOR_BUILD__: JSON.stringify(isCapacitor),
@@ -66,16 +49,14 @@ export default defineConfig({
     },
     ...(isCapacitor
       ? {
-          base: "./",
           build: {
             manifest: true,
             cssCodeSplit: true,
-            target: "es2018",
-            cssTarget: "chrome70",
+            target: "es2020", // Современный таргет, не ломающий сборщик
             modulePreload: false,
             minify: "terser",
             terserOptions: {
-              ecma: 2018,
+              ecma: 2020,
               module: false,
               toplevel: false,
               keep_classnames: true,
