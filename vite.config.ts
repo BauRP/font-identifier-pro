@@ -29,18 +29,20 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
+    // ЖЕСТКО ВЫРУБАЕМ СЛОМАННЫЙ ПРЕРЕНДЕР
+    prerender: {
+      enabled: false, 
+    },
     ...(isCapacitor
       ? {
-          // Zod требует объект. Передаем пустой объект для SPA режима
           spa: {},
-          // Отключаем SSR для локального WebView пакета
           ssr: false,
         }
       : {}),
   },
   vite: {
     plugins: [
-      fixLovablePrerenderPlugin(), // Наш фикс будет работать ВСЕГДА
+      fixLovablePrerenderPlugin(), // Наш фикс остается!
     ],
     define: {
       __CAPACITOR_BUILD__: JSON.stringify(isCapacitor),
@@ -52,7 +54,7 @@ export default defineConfig({
           build: {
             manifest: true,
             cssCodeSplit: true,
-            target: "es2020", // Современный таргет, не ломающий сборщик
+            target: "es2020",
             modulePreload: false,
             minify: "terser",
             terserOptions: {
