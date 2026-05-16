@@ -14,13 +14,14 @@ const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 function fixLovablePrerenderPlugin() {
   return {
     name: "fix-lovable-prerender",
-    buildStart() {
+    // Изменили на writeBundle, чтобы файл создавался ПОСЛЕ очистки папки dist сборщиком Vite
+    writeBundle() {
       const serverDir = join(process.cwd(), "dist", "server");
       if (!existsSync(serverDir)) {
         mkdirSync(serverDir, { recursive: true });
       }
       writeFileSync(join(serverDir, "server.js"), "export const app = {};", "utf8");
-      console.log("[fix-plugin] Заглушка server.js успешно создана для обмана краулера!");
+      console.log("[fix-plugin] Шах и мат: Заглушка server.js записана в последний момент!");
     }
   };
 }
