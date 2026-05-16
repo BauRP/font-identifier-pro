@@ -12,17 +12,14 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
+    // Отключаем пререндеринг намертво на верхнем уровне, чтобы избежать ошибок с поиском сервера
+    prerender: false,
     ...(isCapacitor
       ? {
-          // Исправлено: передаем spa как пустой объект {}, чтобы Zod успешно прошёл валидацию
+          // Передаем как объект, чтобы Zod успешно прошел валидацию схемы
           spa: {},
-          // Полностью отключаем серверный рендеринг, перенаправляя весь код в клиент
+          // Отключаем SSR для локального WebView в Android
           ssr: false,
-          prerender: {
-            enabled: false,
-            autoStaticPathsDiscovery: false,
-            failOnError: false,
-          },
         }
       : {}),
   },
