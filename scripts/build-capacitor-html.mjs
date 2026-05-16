@@ -353,7 +353,7 @@ html = html
   .replace(/href="\/assets\//g, 'href="./assets/')
   .replace(/data-src="\/assets\//g, 'data-src="./assets/');
 
-if (/\s(?:async|defer)\b/i.test(html)) {
+if (/<script\b[^>]*\s(?:async|defer)(?:\s|=|>)/i.test(html)) {
   fail("Generated Capacitor HTML contains async/defer attributes, which are forbidden for the legacy boot pipeline.");
 }
 
@@ -388,7 +388,7 @@ if (!existsSync(flattenedIndexPath)) {
 }
 
 const flattenedIndex = readFileSync(flattenedIndexPath, "utf8");
-if (!flattenedIndex.includes('id="vite-systemjs-loader"') || !flattenedIndex.includes("SystemJS")) {
+if (!/<script id="vite-systemjs-loader">\n[\s\S]{100,}\n    <\/script>/.test(flattenedIndex)) {
   fail("dist/index.html does not contain the inlined legacy SystemJS/polyfill runtime.");
 }
 if (/(?:src|href|data-src)="\/assets\//.test(flattenedIndex)) {
