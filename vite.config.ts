@@ -8,14 +8,13 @@ import legacy from "@vitejs/plugin-legacy";
 import { join } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
-// ЖЕСТКО ВКЛЮЧАЕМ РЕЖИМ ПРИЛОЖЕНИЯ ДЛЯ УБИЙСТВА ПРЕРЕНДЕРА И ОШИБКИ 500
-const isCapacitor = true;
+// ВОЗВРАЩАЕМ ДИНАМИЧЕСКИЙ ФЛАГ, чтобы не ломать базовый путь веб-версии
+const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 
 // Наш микро-плагин для обмана краулера Lovable
 function fixLovablePrerenderPlugin() {
   return {
     name: "fix-lovable-prerender",
-    // Изменили на writeBundle, чтобы файл создавался ПОСЛЕ очистки папки dist сборщиком Vite
     writeBundle() {
       const serverDir = join(process.cwd(), "dist", "server");
       if (!existsSync(serverDir)) {
@@ -31,6 +30,8 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
+    // ЖЕСТКО ВЫКЛЮЧАЕМ ПРЕРЕНДЕР, чтобы сборщик вообще не пытался сканировать страницы
+    prerender: false,
     ...(isCapacitor
       ? {
           // Zod требует объект. Передаем пустой объект для SPA режима
@@ -42,7 +43,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      fixLovablePrerenderPlugin(), // Наш фикс будет работать ВСЕГДА (и в веб, и в мобилке)
+      fixLovablePrerenderPlugin(), // Наш фикс будет работать ВСЕГДА
       ...(isCapacitor
         ? [
             legacy({
