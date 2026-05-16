@@ -30,9 +30,10 @@ export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
     server: { entry: "server" },
-    // Передали объект, чтобы Zod не ругался, и полностью отключили сканирование страниц
+    // Изменено только здесь: передаем пустой массив роутов, чтобы полностью заблокировать пререндер страниц
     prerender: {
       crawl: false,
+      routes: [],
     },
     ...(isCapacitor
       ? {
