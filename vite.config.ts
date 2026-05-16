@@ -18,17 +18,8 @@ export default defineConfig({
           spa: {},
           // Отключаем SSR для локального WebView пакета
           ssr: false,
-          // Исправлено: Zod требует объект. Передаем настройки отключения внутри объекта
-          prerender: {
-            enabled: false,
-            autoStaticPathsDiscovery: false,
-            failOnError: false,
-          },
         }
-      : {
-          // Дефолтный пустой пререндеринг-объект для стандартной сборки, чтобы Zod не ругался
-          prerender: {},
-        }),
+      : {}),
   },
   vite: {
     plugins: isCapacitor
