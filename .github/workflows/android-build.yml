@@ -52,28 +52,28 @@ jobs:
         env:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
+          # Безопасная передача кода через переменную окружения GitHub
+          FIX_SYNTAX_JS: |
+            const fs = require('fs');
+            const path = 'scripts/build-capacitor-html.mjs';
+            if (fs.existsSync(path)) {
+                let code = fs.readFileSync(path, 'utf8');
+                
+                // 1. Если там просто пустой физический перенос -> меняем на правильный \n
+                code = code.replace(/\.split\(\s*["']\s*\r?\n\s*["']\s*\)/g, ".split('\\n')");
+                
+                // 2. Если внутри есть текст с переносом -> меняем кавычки на обратные (backticks)
+                code = code.replace(/\.split\(\s*"([^"]*\r?\n[^"]*)"\s*\)/g, ".split(`$1`)");
+                code = code.replace(/\.split\(\s*'([^']*\r?\n[^']*)'\s*\)/g, ".split(`$1`)");
+                
+                fs.writeFileSync(path, code, 'utf8');
+            }
         run: |
-          # Функция для абсолютного лечения ошибки (Изолированный JS-хирург)
+          # Функция для абсолютного лечения ошибки (Без использования heredoc/EOF)
           fix_script() {
             if [ -f "scripts/build-capacitor-html.mjs" ]; then
-              echo "Создаем и запускаем скрипт-хирург fix-syntax.js..."
-              # Используем 'EOF' в одинарных кавычках, чтобы Bash вообще не трогал спецсимволы!
-              cat << 'EOF' > scripts/fix-syntax.js
-              const fs = require('fs');
-              const path = 'scripts/build-capacitor-html.mjs';
-              if (fs.existsSync(path)) {
-                  let code = fs.readFileSync(path, 'utf8');
-                  
-                  // 1. Если там просто пустой физический перенос -> меняем на правильный \n
-                  code = code.replace(/\.split\(\s*["']\s*\r?\n\s*["']\s*\)/g, ".split('\\n')");
-                  
-                  // 2. Если внутри есть текст с переносом -> меняем кавычки на обратные (backticks)
-                  code = code.replace(/\.split\(\s*"([^"]*\r?\n[^"]*)"\s*\)/g, ".split(`$1`)");
-                  code = code.replace(/\.split\(\s*'([^']*\r?\n[^']*)'\s*\)/g, ".split(`$1`)");
-                  
-                  fs.writeFileSync(path, code, 'utf8');
-              }
-              EOF
+              echo "Создаем и запускаем скрипт-хирург fix-syntax.js из окружения..."
+              printf '%s' "$FIX_SYNTAX_JS" > scripts/fix-syntax.js
               node scripts/fix-syntax.js
               echo "👉 [SUCCESS] Синтаксис вылечен хирургически точно!"
             fi
@@ -94,7 +94,7 @@ jobs:
           echo "Запускаем финальный скрипт постобработки..."
           node scripts/post-build.mjs
           
-          # НАШ НЕСТАНДАРТНЫЙ ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
+          # НАШ НЕСТАНДАРТНЫX ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
           if [ -d "dist/client" ]; then
             echo "Копируем отрендеренные ресурсы из dist/client в корень dist..."
             cp -r dist/client/* dist/
