@@ -29,12 +29,14 @@ jobs:
           # Обновлено до API 36 для соответствия вашим целям разработки
           packages: 'platforms;android-36 build-tools;36.0.0'
 
+          # Запуск установки зависимостей
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
       - name: Build web assets for Capacitor
         env:
           CAPACITOR_BUILD: '1'
+          CI: 'true' # Защита от интерактивных крашей TanStack в автоматической среде
         run: |
           npm run build
           test -f dist/index.html || (echo "FATAL: dist/index.html missing" && exit 1)
