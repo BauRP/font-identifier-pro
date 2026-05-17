@@ -48,14 +48,13 @@ jobs:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
         run: |
-          # Запуск сборки проекта и генерации SPA-оболочки
+          # Запуск нашей изолированной команды
           npm run build:capacitor
           
-          # Финальная верификация артефактов перед синхронизацией с Capacitor
           if [ -f "dist/index.html" ]; then
-            echo "SUCCESS: index.html полностью готов!"
+            echo "SUCCESS: Финальный скрипт исправил структуру!"
           else
-            echo "FATAL: index.html отсутствует в папке dist!" && exit 1
+            echo "FATAL: Точка входа отсутствует!" && exit 1
           fi
 
       - name: Add Android platform (conditional)
@@ -63,7 +62,7 @@ jobs:
           if [ ! -d "android" ]; then
             npx cap add android
           else
-            echo "Android platform already present — skipping"
+            echo "Android platform already present."
           fi
 
       - name: Clean stale Capacitor web assets
