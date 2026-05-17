@@ -26,7 +26,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          # Обновлено до API 36 для соответствия вашим целям разработки
           packages: 'platforms;android-36 build-tools;36.0.0'
 
       - name: Install dependencies
@@ -35,16 +34,21 @@ jobs:
       - name: Build web assets for Capacitor
         env:
           CAPACITOR_BUILD: '1'
-          CI: 'true' # Защита от интерактивных крашей TanStack в автоматической среде
+          CI: 'true' 
         run: |
-          # Запускаем сборку и не даем пайплайну упасть, если TanStack выбросит ошибку сервера
-          npm run build || echo "Предупреждение: Процесс сборки вернул ошибку, но мы проверяем файлы!"
+          npm run build
           
-          # Проверяем, что необходимые клиентские файлы для Capacitor реально на месте
-          if [ -d "dist/client" ] || [ -d "dist" ]; then
-            echo "SUCCESS: Клиентские файлы для Capacitor успешно созданы!"
+          # НАШ НЕСТАНДАРТНЫЙ ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
+          if [ -d "dist/client" ]; then
+            echo "Копируем отрендеренные ресурсы из dist/client в корень dist..."
+            cp -r dist/client/* dist/
+          fi
+          
+          # Проверяем, что главный файл на месте
+          if [ -f "dist/index.html" ]; then
+            echo "SUCCESS: index.html успешно подготовлен для Capacitor!"
           else
-            echo "FATAL: Файлы сборки полностью отсутствуют!" && exit 1
+            echo "FATAL: index.html отсутствует в dist!" && exit 1
           fi
 
       - name: Add Android platform (conditional)
