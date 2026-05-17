@@ -48,19 +48,14 @@ jobs:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
         run: |
-          # Прямой запуск чистой сборки без модификаций файлов на лету
+          # Запуск сборки проекта и генерации SPA-оболочки
           npm run build:capacitor
           
-          # Корректный перенос статики для Capacitor
-          if [ -d "dist/client" ]; then
-            echo "Копируем отрендеренные ресурсы из dist/client в dist..."
-            cp -r dist/client/* dist/
-          fi
-          
+          # Финальная верификация артефактов перед синхронизацией с Capacitor
           if [ -f "dist/index.html" ]; then
-            echo "SUCCESS: index.html готов!"
+            echo "SUCCESS: index.html полностью готов!"
           else
-            echo "FATAL: index.html отсутствует!" && exit 1
+            echo "FATAL: index.html отсутствует в папке dist!" && exit 1
           fi
 
       - name: Add Android platform (conditional)
