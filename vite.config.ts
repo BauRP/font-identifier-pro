@@ -11,7 +11,8 @@ const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
-    server: { entry: "server" },
+    // НОВАЯ СТРОЧКА: Полностью отключаем сборку сервера, если делаем APK!
+    ...(!isCapacitor ? { server: { entry: "server" } } : {}),
     // ЖЕСТКО ВЫРУБАЕМ СЛОМАННЫЙ ПРЕРЕНДЕР С ГАРАНТИЕЙ
     prerender: {
       enabled: false, 
