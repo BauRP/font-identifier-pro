@@ -53,23 +53,29 @@ jobs:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
         run: |
-          # Функция для лечения ошибки разрыва строки (чтобы не дублировать код)
+          # Функция для абсолютного лечения ошибки (Изолированный JS-хирург)
           fix_script() {
             if [ -f "scripts/build-capacitor-html.mjs" ]; then
-              echo "Применяем фикс многострочного разрыва строки..."
-              node -e "
-                const fs = require('fs');
-                const path = 'scripts/build-capacitor-html.mjs';
-                let code = fs.readFileSync(path, 'utf8');
-                const originalLength = code.length;
-                code = code.replace(/\.split\(\s*\"[\s\S]*?\"\s*\)/g, '.split(/\\\\r?\\\\n/)');
-                if (code.length !== originalLength) {
+              echo "Создаем и запускаем скрипт-хирург fix-syntax.js..."
+              # Используем 'EOF' в одинарных кавычках, чтобы Bash вообще не трогал спецсимволы!
+              cat << 'EOF' > scripts/fix-syntax.js
+              const fs = require('fs');
+              const path = 'scripts/build-capacitor-html.mjs';
+              if (fs.existsSync(path)) {
+                  let code = fs.readFileSync(path, 'utf8');
+                  
+                  // 1. Если там просто пустой физический перенос -> меняем на правильный \n
+                  code = code.replace(/\.split\(\s*["']\s*\r?\n\s*["']\s*\)/g, ".split('\\n')");
+                  
+                  // 2. Если внутри есть текст с переносом -> меняем кавычки на обратные (backticks)
+                  code = code.replace(/\.split\(\s*"([^"]*\r?\n[^"]*)"\s*\)/g, ".split(`$1`)");
+                  code = code.replace(/\.split\(\s*'([^']*\r?\n[^']*)'\s*\)/g, ".split(`$1`)");
+                  
                   fs.writeFileSync(path, code, 'utf8');
-                  console.log('👉 [SUCCESS] Код скрипта успешно вылечен от разрыва кавычек!');
-                } else {
-                  console.log('👉 [INFO] Скрипт уже чистый или изменений не требуется.');
-                }
-              " || echo "Ошибка при лечении"
+              }
+              EOF
+              node scripts/fix-syntax.js
+              echo "👉 [SUCCESS] Синтаксис вылечен хирургически точно!"
             fi
           }
 
