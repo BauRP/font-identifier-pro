@@ -4,6 +4,8 @@
 //     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import fs from "node:fs";
+import path from "node:path";
 
 // ВОЗВРАЩАЕМ ДИНАМИЧЕСКИЙ ФЛАГ
 const isCapacitor = process.env.CAPACITOR_BUILD === "1";
@@ -31,7 +33,27 @@ export default defineConfig({
       host: "127.0.0.1", // Жестко фиксируем локальный IP для стабильного пререндера в среде GitHub Actions
       port: 3000,
     },
-    plugins: [],
+    plugins: [
+      {
+        name: "fix-tanstack-server-filename",
+        closeBundle() {
+          try {
+            const serverDir = path.resolve(process.cwd(), "dist/server");
+            if (fs.existsSync(serverDir)) {
+              const indexPath = path.join(serverDir, "index.js");
+              const serverPath = path.join(serverDir, "server.js");
+              // Если TanStack собрал index.js вместо server.js, делаем копию для пререндера
+              if (fs.existsSync(indexPath) && !fs.existsSync(serverPath)) {
+                fs.copyFileSync(indexPath, serverPath);
+                console.log("👉 [HACK] Успешно скопирован index.js в server.js для пререндера!");
+              }
+            }
+          } catch (error) {
+            console.error("Ошибка при копировании серверного файла:", error);
+          }
+        },
+      },
+    ],
     define: {
       __CAPACITOR_BUILD__: JSON.stringify(isCapacitor),
       "process.env.CAPACITOR_BUILD": JSON.stringify(isCapacitor ? "1" : "0"),
