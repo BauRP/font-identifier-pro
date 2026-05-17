@@ -33,6 +33,16 @@ export default defineConfig({
       host: "127.0.0.1", // Жестко фиксируем локальный IP для стабильного пререндера в среде GitHub Actions
       port: 3000,
     },
+    resolve: {
+      // КРИТИЧЕСКИЙ ХАК ДЛЯ УБИРАНИЯ БЕЛОГО ЭКРАНА С ПЛАТФОРМЫ LOVABLE
+      // Если идет сборка под Capacitor, мы принудительно заменяем серверные вызовы на чистый клиентский код
+      alias: isCapacitor
+        ? {
+            "@tanstack/start/client": path.resolve(process.cwd(), "node_modules/@tanstack/react-router/dist/esm/index.js"),
+            "@tanstack/start": path.resolve(process.cwd(), "node_modules/@tanstack/react-router/dist/esm/index.js"),
+          }
+        : {},
+    },
     plugins: [
       {
         name: "fix-tanstack-server-filename",
