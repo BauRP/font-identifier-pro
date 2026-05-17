@@ -21,8 +21,8 @@ function normalizeClientPath(file) {
 }
 
 function htmlAssetPath(file) {
-  // ВОЗВРАЩАЕМ ТОЧКУ: Идеально для нативной схемы capacitor://
-  return `./${normalizeClientPath(file)}`;
+  // Прямой путь от корня схемы (идеально для стабильной адресации в схеме capacitor://localhost/)
+  return `/${normalizeClientPath(file)}`;
 }
 
 function walkFiles(dir, prefix = "") {
@@ -78,8 +78,8 @@ if (!entry?.file) {
   process.exit(1);
 }
 
-// УБРАЛИ type="module": Теперь старые движки Android WebView загрузят скрипт без CORS-блокировок
-const entryScriptTag = `    <script src="${htmlAssetPath(entry.file)}"></script>`;
+// ВОЗВРАЩАЕМ type="module": Теперь синтаксис ESM валиден, а падение гидратации мы изолировали внутри React
+const entryScriptTag = `    <script type="module" src="${htmlAssetPath(entry.file)}"></script>`;
 
 const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -101,4 +101,4 @@ if (existsSync(CLIENT_DIR)) {
   cpSync(CLIENT_DIR, DIST_DIR, { recursive: true });
 }
 
-console.log("[SPA-FIX] 👉 SUCCESS: Чистый index.html создан без модульных тегов!");
+console.log("[SPA-FIX] 👉 SUCCESS: Сборка SPA завершена корректно!");
