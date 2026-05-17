@@ -1,29 +1,43 @@
 import { QueryClient } from "@tanstack/react-query";
-import { createRouter, createHashHistory } from "@tanstack/react-router";
+import { createRouter, createMemoryHistory } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
-// On native Capacitor builds, file:// / https://localhost has no real history API,
-// so pushState routing produces a white screen. Use hash routing on the client
-// when running inside the Capacitor WebView.
-function isCapacitorNative(): boolean {
+// Надежная проверка среды сборки Capacitor
+function isCapacitorBuild(): boolean {
   if (typeof window === "undefined") return false;
-  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor;
-  if (!cap) return false;
-  if (typeof cap.isNativePlatform === "function") return cap.isNativePlatform();
-  if (typeof cap.getPlatform === "function") return cap.getPlatform() !== "web";
+  
+  // 1. Проверяем явный глобальный флаг сборки
+  if ((window as any).CAPACITOR_BUILD === true) return true;
+  
+  // 2. Проверяем наличие нативного моста
+  const cap = (window as any).Capacitor;
+  if (cap) {
+    if (typeof cap.isNativePlatform === "function") return cap.isNativePlatform();
+    if (typeof cap.getPlatform === "function") return cap.getPlatform() !== "web";
+  }
+  
+  // 3. Проверяем протокол (нативные контейнеры часто используют специфичные схемы)
+  if (window.location.protocol === "file:" || window.location.protocol === "capacitor:") return true;
+  
   return false;
 }
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
-  const native = isCapacitorNative();
+  const isNative = isCapacitorBuild();
+
+  // Для Capacitor используем изолированную Memory History, для Web — стандартный режим
+  const historyInstance = isNative 
+    ? createMemoryHistory({ initialEntries: ["/"] }) 
+    : undefined;
 
   const router = createRouter({
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    ...(native ? { history: createHashHistory(), defaultSsr: false } : {}),
+    history: historyInstance,
+    ...(isNative ? { defaultSsr: false } : {}),
   });
 
   return router;
