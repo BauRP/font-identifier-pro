@@ -53,11 +53,23 @@ jobs:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
         run: |
-          # НАШ НЕСТАНДАРТНЫЙ ХАК: На лету чиним разорванный .split() в JS-скрипте перед билдом!
+          # НАШ НЕСТАНДАРТНЫЙ ХАК: Полное многострочное исправление скрипта через Node.js прямо перед сборкой!
           if [ -f "scripts/build-capacitor-html.mjs" ]; then
-            echo "Исправляем синтаксическую ошибку разрыва строки в build-capacitor-html.mjs..."
-            # Заменяем многострочный split на корректную регулярку перевода строк без физического переноса
-            sed -i 's/\.split("[^"]*")/\.split(\/\\r?\\n\/)/g' scripts/build-capacitor-html.mjs || echo "Пропускаем исправление скрипта"
+            echo "Исправляем синтаксическую ошибку многострочного разрыва в build-capacitor-html.mjs..."
+            node -e "
+              const fs = require('fs');
+              const path = 'scripts/build-capacitor-html.mjs';
+              let code = fs.readFileSync(path, 'utf8');
+              const originalLength = code.length;
+              // Находим многострочный .split(\" ... \") с любыми переносами и меняем на безопасный regex
+              code = code.replace(/\.split\(\s*\"[\s\S]*?\"\s*\)/g, '.split(/\\\\r?\\\\n/)');
+              if (code.length !== originalLength) {
+                fs.writeFileSync(path, code, 'utf8');
+                console.log('👉 [SUCCESS] Сломанный многострочный .split() успешно вылечен!');
+              } else {
+                console.log('👉 [WARN] Многострочный .split() не найден или уже заменен.');
+              }
+            " || echo "Пропускаем исправление скрипта"
           fi
 
           npm run build
