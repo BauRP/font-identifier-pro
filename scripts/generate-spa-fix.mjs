@@ -21,8 +21,8 @@ function normalizeClientPath(file) {
 }
 
 function htmlAssetPath(file) {
-  // Убрали относительную точку. Теперь пути будут иметь вид "/assets/..."
-  return `/${normalizeClientPath(file)}`;
+  // Чистый относительный путь для рантайма Android WebView (без точек и ведущих слэшей)
+  return `${normalizeClientPath(file)}`;
 }
 
 function walkFiles(dir, prefix = "") {
