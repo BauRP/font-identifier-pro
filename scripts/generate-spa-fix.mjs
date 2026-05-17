@@ -21,7 +21,8 @@ function normalizeClientPath(file) {
 }
 
 function htmlAssetPath(file) {
-  return `./${normalizeClientPath(file)}`;
+  // Убрали относительную точку. Теперь пути будут иметь вид "/assets/..."
+  return `/${normalizeClientPath(file)}`;
 }
 
 function walkFiles(dir, prefix = "") {
