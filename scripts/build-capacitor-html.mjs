@@ -180,7 +180,7 @@ function getLegacyRuntimeScore(file) {
   return score;
 }
 
-// ВОССТАНОВЛЕННАЯ ФУНКЦИЯ ЭКРАНИРОВАНИЯ
+// КОРРЕКТНО ЗАКРЫТАЯ ФУНКЦИЯ ЭКРАНИРОВАНИЯ
 function escapeInlineScript(source) {
   return source
     .split("</script").join("<\\/script")
