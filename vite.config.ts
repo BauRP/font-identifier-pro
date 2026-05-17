@@ -4,26 +4,9 @@
 //     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { join } from "node:path";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 // ВОЗВРАЩАЕМ ДИНАМИЧЕСКИЙ ФЛАГ
 const isCapacitor = process.env.CAPACITOR_BUILD === "1";
-
-// Наш микро-плагин для обмана краулера Lovable
-function fixLovablePrerenderPlugin() {
-  return {
-    name: "fix-lovable-prerender",
-    writeBundle() {
-      const serverDir = join(process.cwd(), "dist", "server");
-      if (!existsSync(serverDir)) {
-        mkdirSync(serverDir, { recursive: true });
-      }
-      writeFileSync(join(serverDir, "server.js"), "export const app = {};", "utf8");
-      console.log("[fix-plugin] Шах и мат: Заглушка server.js записана в последний момент!");
-    }
-  };
-}
 
 export default defineConfig({
   tanstackStart: {
@@ -46,9 +29,7 @@ export default defineConfig({
     preview: {
       host: true, // Разрешаем внешние подключения к серверу пререндера в среде CI
     },
-    plugins: [
-      fixLovablePrerenderPlugin(), // Наш фикс остается!
-    ],
+    plugins: [],
     define: {
       __CAPACITOR_BUILD__: JSON.stringify(isCapacitor),
       "process.env.CAPACITOR_BUILD": JSON.stringify(isCapacitor ? "1" : "0"),
