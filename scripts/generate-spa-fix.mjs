@@ -21,8 +21,8 @@ function normalizeClientPath(file) {
 }
 
 function htmlAssetPath(file) {
-  // Чистый относительный путь для рантайма Android WebView (без точек и ведущих слэшей)
-  return `${normalizeClientPath(file)}`;
+  // ВОЗВРАЩАЕМ ТОЧКУ: Идеально для нативной схемы capacitor://
+  return `./${normalizeClientPath(file)}`;
 }
 
 function walkFiles(dir, prefix = "") {
@@ -78,7 +78,8 @@ if (!entry?.file) {
   process.exit(1);
 }
 
-const entryScriptTag = `    <script type="module" src="${htmlAssetPath(entry.file)}"></script>`;
+// УБРАЛИ type="module": Теперь старые движки Android WebView загрузят скрипт без CORS-блокировок
+const entryScriptTag = `    <script src="${htmlAssetPath(entry.file)}"></script>`;
 
 const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -100,4 +101,4 @@ if (existsSync(CLIENT_DIR)) {
   cpSync(CLIENT_DIR, DIST_DIR, { recursive: true });
 }
 
-console.log("[SPA-FIX] 👉 SUCCESS: Чистый index.html создан, ассеты объединены в dist!");
+console.log("[SPA-FIX] 👉 SUCCESS: Чистый index.html создан без модульных тегов!");
