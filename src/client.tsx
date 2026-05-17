@@ -1,5 +1,6 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { StartClient } from "@tanstack/start/client";
+import { RouterProvider } from "@tanstack/react-router"; // Добавили чистый клиентский провайдер для SPA-режима
 import { getRouter } from "./router";
 import React from "react";
 
@@ -19,8 +20,8 @@ const isCapacitor = typeof window !== "undefined" &&
 
 if (isCapacitor) {
   // ЖЕСТКИЙ ОБХОД БЕЛОГО ЭКРАНА:
-  // Вместо серверной гидратации TanStack Start, которая падает на Android,
-  // мы принудительно монтируем чистый клиентский React-интерфейс
+  // На мобильных устройствах полностью убираем серверный StartClient, 
+  // заменяя его на чистый клиентский RouterProvider, чтобы избежать падения Rollup
   const root = createRoot(rootElement);
   
   // Обеспечиваем готовность роутера перед рендером
@@ -28,11 +29,8 @@ if (isCapacitor) {
   
   root.render(
     <React.StrictMode>
-      {/* Используем встроенный провайдер вместо StartClient, чтобы полностью отвязаться от сервера */}
-      <div onClick={() => router.navigate({ to: "/" })}>
-        {/* Здесь монтируется дерево роутера напрямую */}
-        <StartClient router={router} />
-      </div>
+      {/* Прямой нативный рендеринг дерева роутера без серверных компонентов */}
+      <RouterProvider router={router} />
     </React.StrictMode>
   );
   
