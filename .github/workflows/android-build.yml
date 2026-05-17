@@ -22,7 +22,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm' # Включаем кэширование, чтобы повторно использовать пакеты и не нагружать сеть
+          # Убрали строку cache: 'npm', которая роняла сборку без lock-файла
+
+      # НАШ НЕСТАНДАРТНЫЙ ХАК: Ручной кэш папки .npm на основе package.json
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-cache-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-cache-
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
