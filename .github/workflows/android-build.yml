@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Java 21 (Zulu)
@@ -22,9 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # Убрали строку cache: 'npm', которая роняла сборку без lock-файла
 
-      # НАШ НЕСТАНДАРТНЫЙ ХАК: Ручной кэш папки .npm на основе package.json
       - name: Cache npm dependencies
         uses: actions/cache@v4
         with:
@@ -40,97 +38,29 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Настраиваем устойчивость npm к сетевым сбоям и обрывам соединения
           npm config set fetch-retry-maxtimeout 120000
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retries 5
-          
-          # Запускаем установку зависимостей
           npm install --legacy-peer-deps
 
       - name: Build web assets for Capacitor
         env:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
-          # Безопасная передача кода через переменную окружения GitHub
-          FIX_SYNTAX_JS: |
-            const fs = require('fs');
-            const path = 'scripts/build-capacitor-html.mjs';
-            if (fs.existsSync(path)) {
-                let code = fs.readFileSync(path, 'utf8');
-                let i = 0;
-                let result = '';
-                
-                while (i < code.length) {
-                    if (code.startsWith('.split(', i)) {
-                        let startContent = i + 7;
-                        let endParen = -1;
-                        
-                        // Линейный сканер: находим истинную закрывающую скобку вызова .split()
-                        for (let j = startContent; j < code.length; j++) {
-                            if (code[j] === ')') {
-                                endParen = j;
-                                break;
-                            }
-                        }
-                        
-                        if (endParen !== -1) {
-                            let inner = code.slice(startContent, endParen).trim();
-                            // Проверяем, обернуто ли содержимое в кавычки
-                            if ((inner.startsWith('"') && inner.endsWith('"')) || (inner.startsWith("'") && inner.endsWith("'"))) {
-                                let content = inner.slice(1, -1);
-                                // Если внутри есть переносы строк — хирургически меняем кавычки на бактэки
-                                if (content.includes('\n') || content.includes('\r')) {
-                                    let fixed = content.replace(/`/g, '\\`');
-                                    result += `.split(\`${fixed}\`)`;
-                                    i = endParen + 1;
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    result += code[i];
-                    i++;
-                }
-                fs.writeFileSync(path, result, 'utf8');
-            }
         run: |
-          # Функция для абсолютного лечения ошибки (Без использования heredoc/EOF)
-          fix_script() {
-            if [ -f "scripts/build-capacitor-html.mjs" ]; then
-              echo "Создаем и запускаем скрипт-хирург fix-syntax.cjs из окружения..."
-              printf '%s' "$FIX_SYNTAX_JS" > scripts/fix-syntax.cjs
-              node scripts/fix-syntax.cjs
-              echo "👉 [SUCCESS] Синтаксис вылечен хирургически точно!"
-            fi
-          }
-
-          # Фаза 1: Первичное лечение файла на диске перед запуском сборки
-          fix_script
-
-          # Фаза 2: Запускаем только Vite-сборку и пререндер страниц
-          echo "Запускаем сборку сред и пререндер через Vite..."
-          npx vite build
-
-          # Фаза 3: Вторичное лечение файла — перезаписываем его, если Vite затер изменения из кэша
-          echo "Проверяем файлы после сборки Vite..."
-          fix_script
-
-          # Фаза 4: Вручную запускаем финальный скрипт постобработки
-          echo "Запускаем финальный скрипт постобработки..."
-          node scripts/post-build.mjs
+          # Прямой запуск чистой сборки без модификаций файлов на лету
+          npm run build:capacitor
           
-          # НАШ НЕСТАНДАРТНЫХ ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
+          # Корректный перенос статики для Capacitor
           if [ -d "dist/client" ]; then
-            echo "Копируем отрендеренные ресурсы из dist/client в корень dist..."
+            echo "Копируем отрендеренные ресурсы из dist/client в dist..."
             cp -r dist/client/* dist/
           fi
           
-          # Проверяем, что главный файл на месте
           if [ -f "dist/index.html" ]; then
-            echo "SUCCESS: index.html успешно подготовлен для Capacitor!"
+            echo "SUCCESS: index.html готов!"
           else
-            echo "FATAL: index.html отсутствует в dist!" && exit 1
+            echo "FATAL: index.html отсутствует!" && exit 1
           fi
 
       - name: Add Android platform (conditional)
@@ -138,7 +68,7 @@ jobs:
           if [ ! -d "android" ]; then
             npx cap add android
           else
-            echo "Android platform already present — skipping cap add"
+            echo "Android platform already present — skipping"
           fi
 
       - name: Clean stale Capacitor web assets
@@ -147,7 +77,7 @@ jobs:
       - name: Capacitor sync
         run: npx cap sync android
 
-      - name: Apply native Android patches after sync
+      - name: Apply native Android patches
         run: node scripts/apply-android-patches.cjs
 
       - name: Gradle assembleDebug
