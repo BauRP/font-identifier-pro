@@ -53,26 +53,40 @@ jobs:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
         run: |
-          # НАШ НЕСТАНДАРТНЫЙ ХАК: Полное многострочное исправление скрипта через Node.js прямо перед сборкой!
-          if [ -f "scripts/build-capacitor-html.mjs" ]; then
-            echo "Исправляем синтаксическую ошибку многострочного разрыва в build-capacitor-html.mjs..."
-            node -e "
-              const fs = require('fs');
-              const path = 'scripts/build-capacitor-html.mjs';
-              let code = fs.readFileSync(path, 'utf8');
-              const originalLength = code.length;
-              // Находим многострочный .split(\" ... \") с любыми переносами и меняем на безопасный regex
-              code = code.replace(/\.split\(\s*\"[\s\S]*?\"\s*\)/g, '.split(/\\\\r?\\\\n/)');
-              if (code.length !== originalLength) {
-                fs.writeFileSync(path, code, 'utf8');
-                console.log('👉 [SUCCESS] Сломанный многострочный .split() успешно вылечен!');
-              } else {
-                console.log('👉 [WARN] Многострочный .split() не найден или уже заменен.');
-              }
-            " || echo "Пропускаем исправление скрипта"
-          fi
+          # Функция для лечения ошибки разрыва строки (чтобы не дублировать код)
+          fix_script() {
+            if [ -f "scripts/build-capacitor-html.mjs" ]; then
+              echo "Применяем фикс многострочного разрыва строки..."
+              node -e "
+                const fs = require('fs');
+                const path = 'scripts/build-capacitor-html.mjs';
+                let code = fs.readFileSync(path, 'utf8');
+                const originalLength = code.length;
+                code = code.replace(/\.split\(\s*\"[\s\S]*?\"\s*\)/g, '.split(/\\\\r?\\\\n/)');
+                if (code.length !== originalLength) {
+                  fs.writeFileSync(path, code, 'utf8');
+                  console.log('👉 [SUCCESS] Код скрипта успешно вылечен от разрыва кавычек!');
+                } else {
+                  console.log('👉 [INFO] Скрипт уже чистый или изменений не требуется.');
+                }
+              " || echo "Ошибка при лечении"
+            fi
+          }
 
-          npm run build
+          # Фаза 1: Первичное лечение файла на диске перед запуском сборки
+          fix_script
+
+          # Фаза 2: Запускаем только Vite-сборку и пререндер страниц
+          echo "Запускаем сборку сред и пререндер через Vite..."
+          npx vite build
+
+          # Фаза 3: Вторичное лечение файла — перезаписываем его, если Vite затер изменения из кэша
+          echo "Проверяем файлы после сборки Vite..."
+          fix_script
+
+          # Фаза 4: Вручную запускаем финальный скрипт постобработки
+          echo "Запускаем финальный скрипт постобработки..."
+          node scripts/post-build.mjs
           
           # НАШ НЕСТАНДАРТНЫЙ ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
           if [ -d "dist/client" ]; then
