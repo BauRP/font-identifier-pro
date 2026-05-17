@@ -22,6 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm' # Включаем кэширование, чтобы повторно использовать пакеты и не нагружать сеть
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -29,7 +30,14 @@ jobs:
           packages: 'platforms;android-36 build-tools;36.0.0'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: |
+          # Настраиваем устойчивость npm к сетевым сбоям и обрывам соединения
+          npm config set fetch-retry-maxtimeout 120000
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retries 5
+          
+          # Запускаем установку зависимостей
+          npm install --legacy-peer-deps
 
       - name: Build web assets for Capacitor
         env:
