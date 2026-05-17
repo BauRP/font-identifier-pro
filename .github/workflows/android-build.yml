@@ -72,9 +72,9 @@ jobs:
           # Функция для абсолютного лечения ошибки (Без использования heredoc/EOF)
           fix_script() {
             if [ -f "scripts/build-capacitor-html.mjs" ]; then
-              echo "Создаем и запускаем скрипт-хирург fix-syntax.js из окружения..."
-              printf '%s' "$FIX_SYNTAX_JS" > scripts/fix-syntax.js
-              node scripts/fix-syntax.js
+              echo "Создаем и запускаем скрипт-хирург fix-syntax.cjs из окружения..."
+              printf '%s' "$FIX_SYNTAX_JS" > scripts/fix-syntax.cjs
+              node scripts/fix-syntax.cjs
               echo "👉 [SUCCESS] Синтаксис вылечен хирургически точно!"
             fi
           }
@@ -94,7 +94,7 @@ jobs:
           echo "Запускаем финальный скрипт постобработки..."
           node scripts/post-build.mjs
           
-          # НАШ НЕСТАНДАРТНЫX ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
+          # НАШ НЕСТАНДАРТНЫХ ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
           if [ -d "dist/client" ]; then
             echo "Копируем отрендеренные ресурсы из dist/client в корень dist..."
             cp -r dist/client/* dist/
