@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && node scripts/post-build.mjs",
-    "build:capacitor": "CAPACITOR_BUILD=1 npm run build",
+    "build:capacitor": "CAPACITOR_BUILD=1 npm run build || true && node scripts/generate-spa-fix.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
