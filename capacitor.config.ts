@@ -11,10 +11,11 @@ const config: CapacitorConfigWithLegacyRuntimeFlag = {
   bundledWebRuntime: false,
   android: {
     allowMixedContent: true,
-    webContentsDebuggingEnabled: true,
+    webContentsDebuggingEnabled: true, // Позволяет читать логи через chrome://inspect
   },
   server: {
-    androidScheme: 'https',
+    // Переключаем схему на дефолтную для Capacitor, чтобы избежать конфликтов SSR
+    androidScheme: 'capacitor',
   },
   plugins: {
     Camera: {
