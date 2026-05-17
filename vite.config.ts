@@ -11,13 +11,13 @@ const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
-    // НОВАЯ СТРОЧКА: Полностью отключаем сборку сервера, если делаем APK!
-    ...(!isCapacitor ? { server: { entry: "server" } } : {}),
-    // ЖЕСТКО ВЫРУБАЕМ СЛОМАННЫЙ ПРЕРЕНДЕР С ГАРАНТИЕЙ
+    server: { entry: "server" }, // Оставляем! Он жизненно необходим TanStack для сборки SPA-оболочки
+    
+    // Включаем пререндер только для главной страницы, чтобы получить точку входа index.html
     prerender: {
-      enabled: false, 
-      crawl: false,
-      routes: []
+      enabled: true, 
+      crawl: true,
+      routes: ["/"] 
     },
     ...(isCapacitor
       ? {
@@ -28,7 +28,8 @@ export default defineConfig({
   },
   vite: {
     preview: {
-      host: true, // Разрешаем внешние подключения к серверу пререндера в среде CI
+      host: "127.0.0.1", // Жестко фиксируем локальный IP для стабильного пререндера в среде GitHub Actions
+      port: 3000,
     },
     plugins: [],
     define: {
