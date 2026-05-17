@@ -53,6 +53,13 @@ jobs:
           CAPACITOR_BUILD: '1'
           CI: 'true' 
         run: |
+          # НАШ НЕСТАНДАРТНЫЙ ХАК: На лету чиним разорванный .split() в JS-скрипте перед билдом!
+          if [ -f "scripts/build-capacitor-html.mjs" ]; then
+            echo "Исправляем синтаксическую ошибку разрыва строки в build-capacitor-html.mjs..."
+            # Заменяем многострочный split на корректную регулярку перевода строк без физического переноса
+            sed -i 's/\.split("[^"]*")/\.split(\/\\r?\\n\/)/g' scripts/build-capacitor-html.mjs || echo "Пропускаем исправление скрипта"
+          fi
+
           npm run build
           
           # НАШ НЕСТАНДАРТНЫЙ ХАК: Переносим сгенерированные файлы туда, где их ждет Capacitor!
