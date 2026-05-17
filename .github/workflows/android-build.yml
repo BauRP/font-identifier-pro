@@ -59,29 +59,26 @@ jobs:
             if (fs.existsSync(path)) {
                 let code = fs.readFileSync(path, 'utf8');
                 
-                // 1. Бронебойное лечение многострочных .split с двойными кавычками (переводим на backticks)
-                code = code.replace(/\.split\(\s*"([\s\S]*?)"\s*\)/g, (match, content) => {
+                // 1. Бронебойное лечение многострочных .split с двойными кавычками и поддержкой экранирования
+                code = code.replace(/\.split\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g, (match, content) => {
                     if (content.includes('\n') || content.includes('\r')) {
                         return `.split(\`${content.replace(/`/g, '\\`').replace(/\\"/g, '"')}\`)`;
                     }
                     return match;
                 });
                 
-                // 2. Бронебойное лечение многострочных .split с одинарными кавычками (переводим на backticks)
-                code = code.replace(/\.split\(\s*'([\s\S]*?)'\s*\)/g, (match, content) => {
+                // 2. Бронебойное лечение многострочных .split с одинарными кавычками и поддержкой экранирования
+                code = code.replace(/\.split\(\s*'((?:[^'\\]|\\.)*)'\s*\)/g, (match, content) => {
                     if (content.includes('\n') || content.includes('\r')) {
-                        return `.split(\`${content.replace(/`/g, '\\`').replace(/\\"/g, "'")}\`)`;
+                        return `.split(\`${content.replace(/`/g, '\\`').replace(/\\'/g, "'")}\`)`;
                     }
                     return match;
                 });
                 
-                // 3. Прямой хак для пустых физических переносов строк вида .split("\n")
-                code = code.replace(/\.split\(\s*["']\s*[\r\n]+\s*["']\s*\)/g, ".split('\\n')");
-                
                 fs.writeFileSync(path, code, 'utf8');
             }
         run: |
-          # Функция для absolute-лечения ошибки (Без использования heredoc/EOF)
+          # Функция для абсолютного лечения ошибки (Без использования heredoc/EOF)
           fix_script() {
             if [ -f "scripts/build-capacitor-html.mjs" ]; then
               echo "Создаем и запускаем скрипт-хирург fix-syntax.cjs из окружения..."
