@@ -43,6 +43,9 @@ export default defineConfig({
       : {}),
   },
   vite: {
+    preview: {
+      host: true, // Разрешаем внешние подключения к серверу пререндера в среде CI
+    },
     plugins: [
       fixLovablePrerenderPlugin(), // Наш фикс остается!
     ],
