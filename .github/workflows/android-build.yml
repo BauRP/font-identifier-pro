@@ -58,24 +58,41 @@ jobs:
             const path = 'scripts/build-capacitor-html.mjs';
             if (fs.existsSync(path)) {
                 let code = fs.readFileSync(path, 'utf8');
+                let i = 0;
+                let result = '';
                 
-                // 1. Бронебойное лечение многострочных .split с двойными кавычками и поддержкой экранирования
-                code = code.replace(/\.split\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g, (match, content) => {
-                    if (content.includes('\n') || content.includes('\r')) {
-                        return `.split(\`${content.replace(/`/g, '\\`').replace(/\\"/g, '"')}\`)`;
+                while (i < code.length) {
+                    if (code.startsWith('.split(', i)) {
+                        let startContent = i + 7;
+                        let endParen = -1;
+                        
+                        // Линейный сканер: находим истинную закрывающую скобку вызова .split()
+                        for (let j = startContent; j < code.length; j++) {
+                            if (code[j] === ')') {
+                                endParen = j;
+                                break;
+                            }
+                        }
+                        
+                        if (endParen !== -1) {
+                            let inner = code.slice(startContent, endParen).trim();
+                            // Проверяем, обернуто ли содержимое в кавычки
+                            if ((inner.startsWith('"') && inner.endsWith('"')) || (inner.startsWith("'") && inner.endsWith("'"))) {
+                                let content = inner.slice(1, -1);
+                                // Если внутри есть переносы строк — хирургически меняем кавычки на бактэки
+                                if (content.includes('\n') || content.includes('\r')) {
+                                    let fixed = content.replace(/`/g, '\\`');
+                                    result += `.split(\`${fixed}\`)`;
+                                    i = endParen + 1;
+                                    continue;
+                                }
+                            }
+                        }
                     }
-                    return match;
-                });
-                
-                // 2. Бронебойное лечение многострочных .split с одинарными кавычками и поддержкой экранирования
-                code = code.replace(/\.split\(\s*'((?:[^'\\]|\\.)*)'\s*\)/g, (match, content) => {
-                    if (content.includes('\n') || content.includes('\r')) {
-                        return `.split(\`${content.replace(/`/g, '\\`').replace(/\\'/g, "'")}\`)`;
-                    }
-                    return match;
-                });
-                
-                fs.writeFileSync(path, code, 'utf8');
+                    result += code[i];
+                    i++;
+                }
+                fs.writeFileSync(path, result, 'utf8');
             }
         run: |
           # Функция для абсолютного лечения ошибки (Без использования heredoc/EOF)
