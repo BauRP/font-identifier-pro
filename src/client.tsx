@@ -1,6 +1,5 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
-import { StartClient } from "@tanstack/start/client";
-import { RouterProvider } from "@tanstack/react-router"; // Добавили чистый клиентский провайдер для SPA-режима
+import { RouterProvider } from "@tanstack/react-router"; 
 import { getRouter } from "./router";
 import React from "react";
 
@@ -19,23 +18,22 @@ const isCapacitor = typeof window !== "undefined" &&
    window.location.protocol === "file:");
 
 if (isCapacitor) {
-  // ЖЕСТКИЙ ОБХОД БЕЛОГО ЭКРАНА:
-  // На мобильных устройствах полностью убираем серверный StartClient, 
-  // заменяя его на чистый клиентский RouterProvider, чтобы избежать падения Rollup
+  // ДЛЯ МОБИЛЬНЫХ (ОБХОД БЕЛОГО ЭКРАНА): Чистый клиентский запуск без серверных модулей
   const root = createRoot(rootElement);
-  
-  // Обеспечиваем готовность роутера перед рендером
   router.hydrate();
   
   root.render(
     <React.StrictMode>
-      {/* Прямой нативный рендеринг дерева роутера без серверных компонентов */}
       <RouterProvider router={router} />
     </React.StrictMode>
   );
   
-  console.log("👉 [TRIVO-CORE] Приложение успешно запущено в чистом нативном SPA-режиме!");
+  console.log("👉 [TRIVO-CORE] Сканер шрифтов запущен в чистом мобильном SPA-режиме!");
 } else {
-  // Для обычного Web-сайта оставляем стандартную гидратацию TanStack Start
-  hydrateRoot(rootElement, <StartClient router={router} />);
+  // ДЛЯ ВЕБ-САЙТА: Динамически загружаем StartClient, чтобы Rollup не ругался при сборке
+  import("@tanstack/start/client").then(({ StartClient }) => {
+    hydrateRoot(rootElement, <React.StrictMode><StartClient router={router} /></React.StrictMode>);
+  }).catch((err) => {
+    console.error("Ошибка гидратации веб-версии:", err);
+  });
 }
