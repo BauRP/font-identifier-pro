@@ -34,14 +34,8 @@ export default defineConfig({
       port: 3000,
     },
     resolve: {
-      // КРИТИЧЕСКИЙ ХАК ДЛЯ УБИРАНИЯ БЕЛОГО ЭКРАНА С ПЛАТФОРМЫ LOVABLE
-      // Если идет сборка под Capacitor, мы принудительно заменяем серверные вызовы на чистый клиентский код
-      alias: isCapacitor
-        ? {
-            "@tanstack/start/client": path.resolve(process.cwd(), "node_modules/@tanstack/react-router/dist/esm/index.js"),
-            "@tanstack/start": path.resolve(process.cwd(), "node_modules/@tanstack/react-router/dist/esm/index.js"),
-          }
-        : {},
+      // ОЧИЩЕНО: Убрали глобальные алиасы подмены, которые ломали Rollup сборку на GitHub
+      alias: {},
     },
     plugins: [
       {
