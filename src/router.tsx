@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { createRouter, createMemoryHistory } from "@tanstack/react-router";
+import { createRouter as createTanStackRouter, createMemoryHistory, createBrowserHistory } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 // Надежная проверка среды сборки Capacitor
@@ -22,23 +22,31 @@ function isCapacitorBuild(): boolean {
   return false;
 }
 
-export const getRouter = () => {
+export function getRouter() {
   const queryClient = new QueryClient();
   const isNative = isCapacitorBuild();
 
-  // Для Capacitor используем изолированную Memory History, для Web — стандартный режим
-  const historyInstance = isNative 
-    ? createMemoryHistory({ initialEntries: ["/"] }) 
-    : undefined;
-
-  const router = createRouter({
+  const router = createTanStackRouter({
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    history: historyInstance,
+    defaultPreload: "intent",
+    // КРИТИЧЕСКИЙ ФИКС ДЛЯ ЧЁРНОГО ЭКРАНА:
+    // Если мы на мобилке, жестко изолируем историю в памяти (Memory History),
+    // чтобы роутер не пытался дергать системный URL Android WebView
+    history: isNative ? createMemoryHistory({ initialEntries: ["/"] }) : createBrowserHistory(),
     ...(isNative ? { defaultSsr: false } : {}),
   });
 
   return router;
-};
+}
+
+// Экспортируем роутер как синглтон для внешних прямых импортов
+export const router = getRouter();
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}
