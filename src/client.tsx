@@ -10,12 +10,19 @@ if (!rootElement) {
   throw new Error("Не найден корневой элемент #root в index.html");
 }
 
-// Инициализируем гидратацию роутера
-router.hydrate();
+const isCapacitor = typeof window !== "undefined" && 
+  ((window as any).CAPACITOR_BUILD === true || 
+   (window as any).Capacitor || 
+   window.location.protocol === "capacitor:" || 
+   window.location.protocol === "file:");
 
-// МЕНЯЕМ НА КЛАССИЧЕСКИЙ ЧИСТЫЙ React SPA РЕНДЕР
-// Это полностью исключает белый экран и любые проверки TanStack Start при сборке мобилки
 const root = createRoot(rootElement);
+
+if (!isCapacitor) {
+  // УДАЛЕНО ДЛЯ МОБИЛОК: Гидратацию вызываем исключительно в Web-версии, 
+  // чтобы избежать зависания рантайма на чёрном экране при MemoryHistory
+  router.hydrate();
+}
 
 root.render(
   <React.StrictMode>
@@ -23,4 +30,4 @@ root.render(
   </React.StrictMode>
 );
 
-console.log("👉 [TRIVO-CORE] Сканер шрифтов успешно запущен в чистом нативном SPA-режиме!");
+console.log("👉 [TRIVO-CORE] Рендеринг интерфейса сканера шрифтов запущен.");
