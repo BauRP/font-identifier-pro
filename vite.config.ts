@@ -13,9 +13,8 @@ const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 export default defineConfig({
   tanstackStart: {
     client: { entry: "client" },
-    server: { entry: "server" }, // Оставляем! Он жизненно необходим TanStack для сборки SPA-оболочки
+    server: { entry: "server" }, 
     
-    // Включаем пререндер только для главной страницы, чтобы получить точку входа index.html
     prerender: {
       enabled: true, 
       crawl: true,
@@ -30,11 +29,10 @@ export default defineConfig({
   },
   vite: {
     preview: {
-      host: "127.0.0.1", // Жестко фиксируем локальный IP для стабильного пререндера в среде GitHub Actions
+      host: "127.0.0.1", 
       port: 3000,
     },
     resolve: {
-      // ОЧИЩЕНО: Убрали глобальные алиасы подмены, которые ломали Rollup сборку на GitHub
       alias: {},
     },
     plugins: [
@@ -46,7 +44,6 @@ export default defineConfig({
             if (fs.existsSync(serverDir)) {
               const indexPath = path.join(serverDir, "index.js");
               const serverPath = path.join(serverDir, "server.js");
-              // Если TanStack собрал index.js вместо server.js, делаем копию для пререндера
               if (fs.existsSync(indexPath) && !fs.existsSync(serverPath)) {
                 fs.copyFileSync(indexPath, serverPath);
                 console.log("👉 [HACK] Успешно скопирован index.js в server.js для пререндера!");
@@ -63,9 +60,13 @@ export default defineConfig({
       "process.env.CAPACITOR_BUILD": JSON.stringify(isCapacitor ? "1" : "0"),
       global: "globalThis",
     },
-    ...(isCapacitor
-      ? {
-          build: {
+    build: {
+      // ИГНОРИРУЕМ СЕРВЕРНЫЙ МОДУЛЬ ДЛЯ СБОРКИ ЧИСТОГО АПК
+      rollupOptions: {
+        external: isCapacitor ? ["@tanstack/start/client", "@tanstack/start"] : [],
+      },
+      ...(isCapacitor
+        ? {
             manifest: true,
             cssCodeSplit: true,
             target: "es2020",
@@ -85,8 +86,8 @@ export default defineConfig({
                 unused: false,
               },
             },
-          },
-        }
-      : {}),
+          }
+        : {}),
+    },
   },
 });
