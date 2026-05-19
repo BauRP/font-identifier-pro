@@ -1,5 +1,6 @@
 import { useEffect, useState, memo } from 'react';
-import { Download, Share2, Type, Palette } from 'lucide-react';
+import { Download, Share2, Type, Palette, Loader2, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { injectFontFace, downloadFont, shareFont } from '@/lib/font-actions';
 import type { SearchResult } from '@/lib/font-types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -32,7 +33,7 @@ function ColorSwatch({
       <PopoverTrigger asChild>
         <button
           aria-label={label}
-          className="relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-transform hover:scale-105"
+          className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border transition-transform hover:scale-105"
           style={{ background: value }}
         >
           <span className="absolute inset-0 flex items-center justify-center text-foreground mix-blend-difference">
@@ -40,7 +41,7 @@ function ColorSwatch({
           </span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-2" align="end">
+      <PopoverContent className="w-auto p-2" align="end" sideOffset={6}>
         <div className="grid grid-cols-6 gap-1.5">
           {SWATCHES.map((c) => (
             <button
@@ -71,6 +72,8 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
   const [fontFamily, setFontFamily] = useState<string | null>(null);
   const [textColor, setTextColor] = useState('#ffffff');
   const [bgColor, setBgColor] = useState('#1a1a1a');
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
     setFontFamily(injectFontFace(entry));
@@ -85,8 +88,42 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
         ? 'bg-neon/10 text-neon/80 border-neon/20'
         : 'bg-secondary text-muted-foreground border-border';
 
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    const res = await downloadFont(entry);
+    setDownloading(false);
+    if (res.ok) {
+      setDownloaded(true);
+      toast.success('Шрифт сохранён', {
+        description: res.location?.includes('Download')
+          ? 'Папка Downloads/TRIVO'
+          : res.location?.includes('Documents')
+            ? 'Папка Documents/TRIVO'
+            : `${entry.file_name}`,
+      });
+      setTimeout(() => setDownloaded(false), 2400);
+    } else {
+      toast.error('Не удалось скачать', { description: res.error });
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await shareFont(entry);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="glass rounded-xl p-3">
+    <div
+      className={`rounded-xl border p-3 transition-colors ${
+        rank === 1
+          ? 'border-neon/40 bg-neon/[0.04] shadow-[0_0_24px_-12px_oklch(0.86_0.21_142/0.6)]'
+          : 'border-border bg-card/40'
+      }`}
+    >
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neon/15 font-display text-[11px] text-neon">
@@ -107,7 +144,6 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
       </div>
 
       <div className="flex items-stretch gap-2">
-        {/* Preview */}
         <div
           className="flex flex-1 items-center overflow-hidden rounded-lg px-3 py-3 text-base leading-tight"
           style={{
@@ -119,7 +155,6 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
           <span className="line-clamp-2">{sampleText}</span>
         </div>
 
-        {/* Per-row controls */}
         <div className="flex flex-col items-center justify-between gap-1.5">
           <ColorSwatch
             value={textColor}
@@ -134,18 +169,25 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
             label="Цвет фона"
           />
           <button
-            onClick={() => shareFont(entry)}
+            onClick={handleShare}
             aria-label="Поделиться"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:bg-neon/10 hover:text-neon"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:bg-neon/10 hover:text-neon"
           >
             <Share2 className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => downloadFont(entry)}
+            onClick={handleDownload}
+            disabled={downloading}
             aria-label="Скачать"
-            className="flex h-8 w-8 items-center justify-center rounded-md bg-neon text-neon-foreground glow-neon transition-shadow hover:glow-neon-strong"
+            className="flex h-9 w-9 items-center justify-center rounded-md bg-neon text-neon-foreground glow-neon transition-shadow hover:glow-neon-strong disabled:opacity-60"
           >
-            <Download className="h-3.5 w-3.5" />
+            {downloading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : downloaded ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </div>
