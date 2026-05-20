@@ -83,30 +83,43 @@ export function ImageAnnotator({
           />
 
           {box && recognition && naturalW > 0 && naturalH > 0 && (
-            <svg
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              viewBox={`0 0 ${naturalW} ${naturalH}`}
-              preserveAspectRatio="none"
+            <div
+              className="absolute inset-0"
               style={{ width: box.w, height: box.h }}
             >
               {recognition.blocks.map((b) => {
                 const selected = b.id === selectedBlockId;
+                const sx = box.w / naturalW;
+                const sy = box.h / naturalH;
                 return (
-                  <g key={b.id} className="pointer-events-auto cursor-pointer">
-                    <rect
-                      x={b.x}
-                      y={b.y}
-                      width={b.width}
-                      height={b.height}
-                      fill={selected ? 'rgba(255, 45, 45, 0.30)' : 'rgba(255, 45, 45, 0.10)'}
-                      stroke={selected ? '#39FF14' : '#FF2D2D'}
-                      strokeWidth={Math.max(2, naturalW / 360)}
-                      onClick={() => onBlockSelect(b)}
-                    />
-                  </g>
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onBlockSelect(b);
+                    }}
+                    aria-label={`Выбрать область: ${b.text.slice(0, 40)}`}
+                    className="absolute cursor-pointer touch-manipulation transition-colors"
+                    style={{
+                      left: b.x * sx,
+                      top: b.y * sy,
+                      width: Math.max(8, b.width * sx),
+                      height: Math.max(8, b.height * sy),
+                      background: selected
+                        ? 'rgba(255, 45, 45, 0.30)'
+                        : 'rgba(255, 45, 45, 0.12)',
+                      border: `2px solid ${selected ? '#39FF14' : '#FF2D2D'}`,
+                      borderRadius: 4,
+                      pointerEvents: 'auto',
+                      WebkitTapHighlightColor: 'rgba(57,255,20,0.35)',
+                      padding: 0,
+                    }}
+                  />
                 );
               })}
-            </svg>
+            </div>
           )}
 
           {isAnalyzing && (
