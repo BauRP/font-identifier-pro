@@ -37,6 +37,13 @@ async function loadImageSize(src: string): Promise<{ w: number; h: number }> {
 }
 
 async function imageSrcToBase64(src: string): Promise<string> {
+  // Data URL fast-path — avoids fetch() entirely, which is critical on
+  // Android where content:// URIs returned by the gallery picker are not
+  // always reachable from the WebView fetch stack.
+  if (src.startsWith('data:')) {
+    const i = src.indexOf(',');
+    return i >= 0 ? src.slice(i + 1) : src;
+  }
   const res = await fetch(src);
   const blob = await res.blob();
   return new Promise((resolve, reject) => {
@@ -50,11 +57,14 @@ async function imageSrcToBase64(src: string): Promise<string> {
   });
 }
 
-async function recognizeNative(displayUrl: string): Promise<RecognitionResult> {
+async function recognizeNative(
+  displayUrl: string,
+  preloadedBase64?: string,
+): Promise<RecognitionResult> {
   const { CapacitorPluginMlKitTextRecognition } = await import(
     '@pantrist/capacitor-plugin-ml-kit-text-recognition'
   );
-  const base64Image = await imageSrcToBase64(displayUrl);
+  const base64Image = preloadedBase64 ?? (await imageSrcToBase64(displayUrl));
   const { w, h } = await loadImageSize(displayUrl);
   const res = await CapacitorPluginMlKitTextRecognition.detectText({ base64Image, rotation: 0 });
 
@@ -107,11 +117,15 @@ async function recognizeWeb(displayUrl: string): Promise<RecognitionResult> {
   }
 }
 
-/** Run on-device OCR on a web-safe image URL (returned by image-capture). */
-export async function recognizeTextFromImage(displayUrl: string): Promise<RecognitionResult> {
+/** Run on-device OCR. Pass preloadedBase64 from image-capture to avoid any
+ *  re-fetch of content:// URIs on Android. */
+export async function recognizeTextFromImage(
+  displayUrl: string,
+  preloadedBase64?: string,
+): Promise<RecognitionResult> {
   if (Capacitor.isNativePlatform()) {
     try {
-      return await recognizeNative(displayUrl);
+      return await recognizeNative(displayUrl, preloadedBase64);
     } catch (err) {
       console.error('[text-recognition] native ML Kit failed, falling back to tesseract', err);
     }

@@ -36,6 +36,7 @@ function TrivoApp() {
   const [status, setStatus] = useState('Готов к сканированию');
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | undefined>(undefined);
   const [recognition, setRecognition] = useState<RecognitionResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -99,6 +100,7 @@ function TrivoApp() {
       setBusy(true);
       setPermissionDenied(false);
       setStatus(source === 'camera' ? 'Открываю камеру...' : 'Открываю галерею...');
+      let captureOk = false;
       try {
         const captured = await captureImage(source);
         if (!captured) {
@@ -106,24 +108,43 @@ function TrivoApp() {
           setBusy(false);
           return;
         }
+        captureOk = true;
         setImageUrl(captured.displayUrl);
+        setImageBase64(captured.base64);
         setAnalyzing(true);
         setRecognition(null);
         setSelectedBlockId(null);
         setStatus('Анализ на устройстве (ML Kit / Vision)...');
-        const rec = await recognizeTextFromImage(captured.displayUrl);
-        setRecognition(rec);
-        setAnalyzing(false);
-        setStatus(
-          rec.blocks.length > 0
-            ? `Найдено ${rec.blocks.length} областей. Нажмите красный блок.`
-            : 'Текст не найден. Попробуйте другое фото.',
-        );
+        try {
+          const rec = await recognizeTextFromImage(captured.displayUrl, captured.base64);
+          setRecognition(rec);
+          setStatus(
+            rec.blocks.length > 0
+              ? `Найдено ${rec.blocks.length} областей. Нажмите красный блок.`
+              : 'Текст не найден. Попробуйте другое фото.',
+          );
+        } catch (ocrErr) {
+          console.error('[index] OCR failed', ocrErr);
+          // OCR failure is NOT a permission failure — never surface the
+          // "Access denied" copy here. Keep the photo on screen so the user
+          // can retry or pick another image.
+          setRecognition({ fullText: '', blocks: [], imageWidth: 0, imageHeight: 0 });
+          setStatus('Не удалось распознать текст. Попробуйте другое фото.');
+        } finally {
+          setAnalyzing(false);
+        }
       } catch (err) {
         console.error('[index] capture flow failed', err);
-        setPermissionDenied(true);
-        setStatus('Ошибка доступа к камере');
+        // Only the camera path can legitimately be a hardware-permission denial.
+        if (source === 'camera' && !captureOk) {
+          setPermissionDenied(true);
+          setStatus('Не удалось открыть камеру');
+        } else {
+          setStatus('Не удалось открыть галерею. Попробуйте ещё раз.');
+        }
         setImageUrl(null);
+        setImageBase64(undefined);
+        setAnalyzing(false);
       } finally {
         setBusy(false);
       }
@@ -145,6 +166,7 @@ function TrivoApp() {
 
   const closeAnnotator = () => {
     setImageUrl(null);
+    setImageBase64(undefined);
     setRecognition(null);
     setSelectedBlockId(null);
     setAnalyzing(false);
