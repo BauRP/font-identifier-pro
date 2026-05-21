@@ -64,27 +64,36 @@ export async function downloadFont(entry: FontEntry): Promise<DownloadResult> {
 
   if (Capacitor.isNativePlatform()) {
     try {
-      const [{ Filesystem, Directory }, res] = await Promise.all([
-        import('@capacitor/filesystem'),
-        fetch(url),
-      ]);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const base64 = await blobToBase64(blob);
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
       const fileName = entry.file_name;
 
-      // Try the public Downloads folder first (Android: /storage/emulated/0/Download/TRIVO/...).
-      // Some OEMs/SDK levels deny this without MANAGE_EXTERNAL_STORAGE — fall back to Documents.
+      // Native downloadFile bypasses WebView CORS entirely.
+      const targets: Array<{ path: string; directory: Directory }> = [
+        { path: `Download/TRIVO/${fileName}`, directory: Directory.ExternalStorage },
+        { path: `TRIVO/${fileName}`, directory: Directory.Documents },
+        { path: `TRIVO/${fileName}`, directory: Directory.Cache },
+      ];
+      let lastErr: unknown = null;
+      for (const t of targets) {
+        try {
+          const dl = await Filesystem.downloadFile({
+            url,
+            path: t.path,
+            directory: t.directory,
+            recursive: true,
+          } as Parameters<typeof Filesystem.downloadFile>[0]);
+          return { ok: true, location: (dl as { path?: string }).path ?? t.path };
+        } catch (err) {
+          lastErr = err;
+          console.warn('[download] target failed', t, err);
+        }
+      }
+      // Final fallback: fetch + writeFile (may fail under CORS but worth trying).
       try {
-        const written = await Filesystem.writeFile({
-          path: `Download/TRIVO/${fileName}`,
-          data: base64,
-          directory: Directory.ExternalStorage,
-          recursive: true,
-        });
-        return { ok: true, location: written.uri };
-      } catch (err) {
-        console.warn('[download] ExternalStorage failed, using Documents', err);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const base64 = await blobToBase64(blob);
         const written = await Filesystem.writeFile({
           path: `TRIVO/${fileName}`,
           data: base64,
@@ -92,7 +101,10 @@ export async function downloadFont(entry: FontEntry): Promise<DownloadResult> {
           recursive: true,
         });
         return { ok: true, location: written.uri };
+      } catch (err) {
+        lastErr = err;
       }
+      return { ok: false, error: (lastErr as Error)?.message ?? 'download failed' };
     } catch (err) {
       return { ok: false, error: (err as Error)?.message ?? 'download failed' };
     }
