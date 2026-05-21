@@ -88,10 +88,16 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
         ? 'bg-neon/10 text-neon/80 border-neon/20'
         : 'bg-secondary text-muted-foreground border-border';
 
-  const handleDownload = async () => {
+  const handleDownload = async (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation();
     if (downloading) return;
     setDownloading(true);
-    const res = await downloadFont(entry);
+    let res;
+    try {
+      res = await downloadFont(entry);
+    } catch (err) {
+      res = { ok: false, error: (err as Error)?.message ?? 'unknown' };
+    }
     setDownloading(false);
     if (res.ok) {
       setDownloaded(true);
@@ -104,11 +110,12 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
       });
       setTimeout(() => setDownloaded(false), 2400);
     } else {
-      toast.error('Не удалось скачать', { description: res.error });
+      toast.error('Не удалось скачать', { description: res.error ?? 'Network error' });
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = async (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation();
     try {
       await shareFont(entry);
     } catch (err) {
@@ -170,6 +177,7 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
           />
           <button
             onClick={handleShare}
+            onTouchEnd={(e) => { e.stopPropagation(); }}
             aria-label="Поделиться"
             className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:bg-neon/10 hover:text-neon"
           >
@@ -177,6 +185,7 @@ export const FontCard = memo(function FontCard({ result, rank, sampleText }: Fon
           </button>
           <button
             onClick={handleDownload}
+            onTouchEnd={(e) => { e.stopPropagation(); }}
             disabled={downloading}
             aria-label="Скачать"
             className="flex h-9 w-9 items-center justify-center rounded-md bg-neon text-neon-foreground glow-neon transition-shadow hover:glow-neon-strong disabled:opacity-60"
