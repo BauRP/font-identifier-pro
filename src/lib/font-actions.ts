@@ -68,11 +68,11 @@ export async function downloadFont(entry: FontEntry): Promise<DownloadResult> {
       const fileName = entry.file_name;
 
       // Native downloadFile bypasses WebView CORS entirely.
-      const targets: Array<{ path: string; directory: Directory }> = [
+      const targets = [
         { path: `Download/TRIVO/${fileName}`, directory: Directory.ExternalStorage },
         { path: `TRIVO/${fileName}`, directory: Directory.Documents },
         { path: `TRIVO/${fileName}`, directory: Directory.Cache },
-      ];
+      ] as const;
       let lastErr: unknown = null;
       for (const t of targets) {
         try {
