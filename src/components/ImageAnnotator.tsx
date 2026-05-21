@@ -31,17 +31,14 @@ export function ImageAnnotator({
   const lastTapRef = useRef<{ id: string; t: number }>({ id: '', t: 0 });
 
   const handleBoxTap = (b: TextBlock) => {
+    // Debounce double-fires from onClick+onTouchEnd within 350ms.
     const now = Date.now();
     const prev = lastTapRef.current;
-    if (prev.id === b.id && now - prev.t < 300) {
-      lastTapRef.current = { id: '', t: 0 };
-      // Extract a strict string before handing off to search.
-      const text = typeof b.text === 'string' ? b.text : String(b.text ?? '');
-      console.log('Double tap detected on text:', text);
-      onBlockSelect({ ...b, text });
-    } else {
-      lastTapRef.current = { id: b.id, t: now };
-    }
+    if (prev.id === b.id && now - prev.t < 350) return;
+    lastTapRef.current = { id: b.id, t: now };
+    const text = typeof b.text === 'string' ? b.text : String(b.text ?? '');
+    console.log('Box tapped, text:', text);
+    onBlockSelect({ ...b, text });
   };
 
   useEffect(() => {

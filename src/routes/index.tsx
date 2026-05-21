@@ -308,6 +308,7 @@ function TrivoApp() {
         cropImage={cropImage}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onQueryChange={(text) => runSearch(text)}
       />
     </div>
   );

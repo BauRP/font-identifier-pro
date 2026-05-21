@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, Search } from 'lucide-react';
 import type { SearchResult } from '@/lib/font-types';
 import { FontCard } from './FontCard';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ResultsDrawerProps {
   results: SearchResult[];
@@ -11,6 +11,8 @@ interface ResultsDrawerProps {
   cropImage?: string | null;
   isOpen: boolean;
   onClose: () => void;
+  /** Re-run the font search with user-corrected text. */
+  onQueryChange?: (text: string) => void;
 }
 
 /**
@@ -27,16 +29,19 @@ export function ResultsDrawer({
   cropImage,
   isOpen,
   onClose,
+  onQueryChange,
 }: ResultsDrawerProps) {
   const top10 = results.slice(0, 10);
   const sample = (query || 'The Quick Brown Fox').slice(0, 64);
+  const [editText, setEditText] = useState(query);
+  useEffect(() => { setEditText(query); }, [query]);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm"
+            className="fixed inset-0 z-[1000] bg-background/70 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -44,11 +49,12 @@ export function ResultsDrawer({
           />
 
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92vh] flex-col glass rounded-t-2xl"
+            className="fixed inset-x-0 bottom-0 z-[1001] flex max-h-[92dvh] h-[92dvh] flex-col glass rounded-t-2xl"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            style={{ pointerEvents: 'auto' }}
           >
             <div className="flex shrink-0 justify-center py-2">
               <div className="h-1 w-12 rounded-full bg-neon/40" />
@@ -66,13 +72,42 @@ export function ResultsDrawer({
                   </p>
                 </div>
                 <button
-                  onClick={onClose}
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
+                  onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
                   aria-label="Закрыть"
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-neon/10 hover:text-neon"
+                  className="relative z-[1002] flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-neon/10 hover:text-neon"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
+              {/* Editable extracted-text input — lets user correct OCR mistakes */}
+              {onQueryChange && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg border border-neon/20 bg-black/30 px-2 py-1.5">
+                  <Search className="h-3.5 w-3.5 shrink-0 text-neon" />
+                  <input
+                    type="text"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && editText.trim().length >= 2) {
+                        onQueryChange(editText.trim());
+                      }
+                    }}
+                    placeholder="Исправьте распознанный текст..."
+                    className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (editText.trim().length >= 2) onQueryChange(editText.trim());
+                    }}
+                    className="rounded bg-neon/20 px-2 py-0.5 text-[10px] font-display uppercase tracking-wider text-neon hover:bg-neon/30"
+                  >
+                    Найти
+                  </button>
+                </div>
+              )}
 
               <div className="mt-2 overflow-hidden rounded-xl border border-neon/20 bg-black">
                 {cropImage ? (
@@ -92,7 +127,14 @@ export function ResultsDrawer({
             </div>
 
             {/* Ranked list */}
-            <ScrollArea className="flex-1 px-4 pb-6">
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-6"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                pointerEvents: 'auto',
+                touchAction: 'pan-y',
+              }}
+            >
               {top10.length === 0 ? (
                 <div className="py-12 text-center">
                   <p className="font-display text-sm text-muted-foreground">
@@ -111,7 +153,7 @@ export function ResultsDrawer({
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </motion.div>
         </>
       )}
