@@ -26,6 +26,23 @@ export function ImageAnnotator({
 }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  // Custom double-tap timer per-box. Mobile WebViews swallow onDoubleClick,
+  // so we measure the delta between two taps on the same box manually.
+  const lastTapRef = useRef<{ id: string; t: number }>({ id: '', t: 0 });
+
+  const handleBoxTap = (b: TextBlock) => {
+    const now = Date.now();
+    const prev = lastTapRef.current;
+    if (prev.id === b.id && now - prev.t < 300) {
+      lastTapRef.current = { id: '', t: 0 };
+      // Extract a strict string before handing off to search.
+      const text = typeof b.text === 'string' ? b.text : String(b.text ?? '');
+      console.log('Double tap detected on text:', text);
+      onBlockSelect({ ...b, text });
+    } else {
+      lastTapRef.current = { id: b.id, t: now };
+    }
+  };
 
   useEffect(() => {
     const update = () => {
@@ -85,7 +102,7 @@ export function ImageAnnotator({
           {box && recognition && naturalW > 0 && naturalH > 0 && (
             <div
               className="absolute inset-0"
-              style={{ width: box.w, height: box.h }}
+              style={{ width: box.w, height: box.h, zIndex: 9999, pointerEvents: 'auto' }}
             >
               {recognition.blocks.map((b) => {
                 const selected = b.id === selectedBlockId;
@@ -98,9 +115,14 @@ export function ImageAnnotator({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onBlockSelect(b);
+                      handleBoxTap(b);
                     }}
-                    aria-label={`Выбрать область: ${b.text.slice(0, 40)}`}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleBoxTap(b);
+                    }}
+                    aria-label={`Выбрать область: ${String(b.text).slice(0, 40)}`}
                     className="absolute cursor-pointer touch-manipulation transition-colors"
                     style={{
                       left: b.x * sx,
@@ -115,6 +137,9 @@ export function ImageAnnotator({
                       pointerEvents: 'auto',
                       WebkitTapHighlightColor: 'rgba(57,255,20,0.35)',
                       padding: 0,
+                      zIndex: 9999,
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
                     }}
                   />
                 );
@@ -125,6 +150,7 @@ export function ImageAnnotator({
           {isAnalyzing && (
             <motion.div
               className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm"
+              style={{ pointerEvents: 'none', zIndex: 1 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
