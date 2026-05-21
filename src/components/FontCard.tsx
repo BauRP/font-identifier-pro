@@ -33,6 +33,8 @@ function ColorSwatch({
       <PopoverTrigger asChild>
         <button
           aria-label={label}
+          onClick={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
           className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border transition-transform hover:scale-105"
           style={{ background: value }}
         >
